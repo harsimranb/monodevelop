@@ -131,6 +131,12 @@ namespace MonoDevelop.Ide.Gui
 		public MonoDevelopStatusBar BottomBar {
 			get { return bottomBar; }
 		}
+
+		internal DockNotebook TabControl {
+			get {
+				return tabControl;
+			}
+		}
 		
 		internal IWorkbenchWindow ActiveWorkbenchWindow {
 			get {
@@ -732,7 +738,7 @@ namespace MonoDevelop.Ide.Gui
 			SetWorkbenchTitle ();
 		}
 		
-		void OnActiveWindowChanged (object sender, EventArgs e)
+		internal void OnActiveWindowChanged (object sender, EventArgs e)
 		{
 			if (ignorePageSwitch)
 				return;
@@ -833,18 +839,8 @@ namespace MonoDevelop.Ide.Gui
 			toolbarFrame.AddContent (dock);
 			
 			// Create the notebook for the various documents.
-			tabControl = new SdiDragNotebook ();
-			tabControl.SwitchPage += OnActiveWindowChanged;
-			tabControl.PageRemoved += OnActiveWindowChanged;
-			tabControl.TabClosed += CloseClicked;
-		
-			tabControl.TabActivated += delegate(object sender, TabEventArgs e) {
-				ToggleFullViewMode ();
-			};
+			tabControl = new SdiDragNotebook (this);
 
-			this.tabControl.DoPopupMenu = ShowPopup;
-			
-			tabControl.TabsReordered += new TabsReorderedHandler (OnTabsReordered);
 
 			Add (fullViewVBox);
 			fullViewVBox.ShowAll ();
@@ -865,7 +861,7 @@ namespace MonoDevelop.Ide.Gui
 			documentDockItem.Expand = true;
 			documentDockItem.DrawFrame = false;
 			documentDockItem.Label = GettextCatalog.GetString ("Documents");
-			documentDockItem.Content = tabControl;
+			documentDockItem.Content = new DockNotebookContainer (tabControl);
 
 			DockVisualStyle style = new DockVisualStyle ();
 			style.PadTitleLabelColor = Styles.PadLabelColor;
@@ -1001,13 +997,13 @@ namespace MonoDevelop.Ide.Gui
 			}
 		}
 		
-		void ShowPopup (int tabIndex, Gdk.EventButton evt)
+		internal void ShowPopup (int tabIndex, Gdk.EventButton evt)
 		{
 			this.tabControl.CurrentTabIndex = tabIndex;
 			IdeApp.CommandService.ShowContextMenu (this.tabControl, evt, "/MonoDevelop/Ide/ContextMenu/DocumentTab");
 		}
 		
-		void OnTabsReordered (Widget widget, int oldPlacement, int newPlacement)
+		internal void OnTabsReordered (Widget widget, int oldPlacement, int newPlacement)
 		{
 			IdeApp.Workbench.ReorderDocuments (oldPlacement, newPlacement);
 		}
@@ -1169,7 +1165,7 @@ namespace MonoDevelop.Ide.Gui
 			lastActiveWindows.Remove (f);
 		}
 		
-		void CloseClicked (object o, TabEventArgs e)
+		internal void CloseClicked (object o, TabEventArgs e)
 		{
 			((SdiWorkspaceWindow)e.Tab.Content).CloseWindow (false, true);
 		}
@@ -1409,7 +1405,7 @@ namespace MonoDevelop.Ide.Gui
 	
 	class SdiDragNotebook: DockNotebook, ICommandDelegatorRouter, ICommandBar
 	{
-		public SdiDragNotebook ()
+		public SdiDragNotebook (DefaultWorkbench window)
 		{
 			NextButtonClicked += delegate {
 				IdeApp.CommandService.DispatchCommand (Ide.Commands.NavigationCommands.NavigateForward);
@@ -1417,7 +1413,25 @@ namespace MonoDevelop.Ide.Gui
 			PreviousButtonClicked += delegate {
 				IdeApp.CommandService.DispatchCommand (Ide.Commands.NavigationCommands.NavigateBack);
 			};
+
+			SwitchPage += window.OnActiveWindowChanged;
+			PageRemoved += window.OnActiveWindowChanged;
+			TabClosed += window.CloseClicked;
+
+			TabActivated += delegate(object sender, TabEventArgs e) {
+				window.ToggleFullViewMode ();
+			};
+			TabsReordered += new TabsReorderedHandler (window.OnTabsReordered);
+
+			DoPopupMenu = window.ShowPopup;
+
 			IdeApp.CommandService.RegisterCommandBar (this);
+		}
+
+		protected override void OnDestroyed ()
+		{
+			IdeApp.CommandService.UnregisterCommandBar (this); 
+			base.OnDestroyed ();
 		}
 		
 		public object GetNextCommandTarget ()
