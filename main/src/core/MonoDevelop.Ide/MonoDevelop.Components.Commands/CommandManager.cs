@@ -1178,6 +1178,7 @@ namespace MonoDevelop.Components.Commands
 					else if (!bypass && typeInfo.GetCommandHandler (commandId) != null) {
 						info.Enabled = guiLock == 0;
 						info.Visible = true;
+						
 						return info;
 					}
 					
@@ -1462,6 +1463,15 @@ namespace MonoDevelop.Components.Commands
 			h.Next = chain ?? DefaultCommandHandler.Instance;
 			return h;
 		}
+
+		Gtk.Window GetCurrentFocusedTopLevelWindow ()
+		{
+			foreach (var window in topLevelWindows.Values) {
+				if (window.HasToplevelFocus)
+					return window;
+			}
+			return rootWidget;
+		}
 		
 		object GetFirstCommandTarget (CommandTargetRoute targetRoute)
 		{
@@ -1472,7 +1482,7 @@ namespace MonoDevelop.Components.Commands
 			if (targetRoute.InitialTarget != null)
 				cmdTarget = targetRoute.InitialTarget;
 			else {
-				cmdTarget = GetActiveWidget (rootWidget);
+				cmdTarget = GetActiveWidget (GetCurrentFocusedTopLevelWindow ());
 				if (cmdTarget == null) {
 					cmdTarget = globalHandlerChain;
 				}
