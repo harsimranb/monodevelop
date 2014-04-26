@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Addin namespace="MonoDevelop.JavaScript"
+		id="JavaScriptSupport"
+		name="JavaScript Support"
+		author="Harsimran Bath"
+		copyright="GNU General Public"
+		url="http://www.monodevelop.com"
+		description="Adds JavaScript Support to Xamarin Studio."
+		category="Web Development"
+		version="0.211">
+
+  <Dependencies>
+    <Addin id="::MonoDevelop.Ide" version="4.0" />
+    <Addin id="::MonoDevelop.Core" version="4.0" />
+    <Addin id="::MonoDevelop.SourceEditor2" version="4.0" />
+  </Dependencies>
+
+  <Runtime>
+    <Import file="Templates\EmptyJSFile.xft.xml"/>
+  </Runtime>
+
+  <Extension path="/MonoDevelop/Ide/FileTemplates">
+    <FileTemplate id="JSFile" file="Templates\EmptyJSFile.xft.xml"/>
+  </Extension>
+  
+  <Extension path="/MonoDevelop/Ide/FileFilters">
+    <FileFilter id="JSFile"
+		            insertafter="Xml"
+		           _label="JavaScript Files"
+		           extensions="*.js" />
+  </Extension>
+
+  <Extension path="/MonoDevelop/Core/StockIcons">
+    <StockIcon stockid="md-js-file-icon" file="Icons\JSFileIcon.png" size="Menu" />
+  </Extension>
+
+  <!--<Extension path = "/MonoDevelop/Core/MimeTypes">
+    *Note: Spec RFC 4329 recommends application/javascript as best practice.
+    <MimeType id="application/javascript" _description="JavaScript File" isText="true">
+      <File pattern="*.js" />
+    </MimeType>
+  </Extension>-->
+  
+  <Extension path = "/MonoDevelop/TypeSystem/Parser">
+    <Parser class = "MonoDevelop.JavaScript.Parser.JavaScriptParser" mimeType="application/javascript, text/javascript" />
+  </Extension>
+
+  <Extension path = "/MonoDevelop/Ide/TextEditorExtensions">
+    <Class fileExtensions = ".js" class = "MonoDevelop.JavaScript.TextEditor.JavaScriptEditorExtension" />
+  </Extension>
+
+  <Extension path = "/MonoDevelop/SourceEditor2/SyntaxModes">
+    <Templates file="SyntaxModes\JavaScriptSyntaxMode.xml" />
+  </Extension>
+
+</Addin>
