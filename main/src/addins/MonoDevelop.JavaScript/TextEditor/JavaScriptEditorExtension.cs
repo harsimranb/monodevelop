@@ -182,22 +182,15 @@ namespace MonoDevelop.JavaScript.TextEditor
                 var variableStatement = node as Jurassic.Compiler.VarStatement;
                 if (variableStatement != null)
                 {
-                    Gdk.Pixbuf icon;
-
-                    if (variableStatement.Scope is Jurassic.Compiler.DeclarativeScope)
-                        icon = iconManager.GetIcon(Stock.Field);
-                    else
-                        icon = iconManager.GetIcon(Stock.InternalField);
+                    var icon = iconManager.GetIcon(Stock.Field);
 
                     foreach (Jurassic.Compiler.VariableDeclaration variableDeclaration in variableStatement.Declarations)
                     {
-                        if (!parent.Equals(Gtk.TreeIter.Zero))
-                            childIter = store.AppendValues(parent, icon, string.Concat(variableDeclaration.VariableName), variableDeclaration);
-                        else
-                            childIter = store.AppendValues(icon, string.Concat(variableDeclaration.VariableName), variableDeclaration);
+                        childIter = store.AppendValues(parent, icon, string.Concat(variableDeclaration.VariableName), variableDeclaration);
                     }
 
                     buildTreeChildren(store, childIter, node.ChildNodes);
+
                     continue;
                 }
 
@@ -205,12 +198,11 @@ namespace MonoDevelop.JavaScript.TextEditor
                 if (functionStatement != null)
                 {
                     var icon = iconManager.GetIcon(Stock.Method);
-                    if (!parent.Equals(Gtk.TreeIter.Zero))
-                        childIter = store.AppendValues(parent, icon, buildFunctionSignature(functionStatement.FunctionName, functionStatement.ArgumentNames), functionStatement);
-                    else
-                        childIter = store.AppendValues(icon, buildFunctionSignature(functionStatement.FunctionName, functionStatement.ArgumentNames), functionStatement);
+
+                    childIter = store.AppendValues(parent, icon, buildFunctionSignature(functionStatement.FunctionName, functionStatement.ArgumentNames), functionStatement);
 
                     buildTreeChildren(store, childIter, functionStatement.BodyRoot.ChildNodes);
+
                     continue;
                 }
 
@@ -218,12 +210,11 @@ namespace MonoDevelop.JavaScript.TextEditor
                 if (functionExpression != null)
                 {
                     var icon = iconManager.GetIcon(Stock.Method);
-                    if (!parent.Equals(Gtk.TreeIter.Zero))
-                        childIter = store.AppendValues(parent, icon, buildFunctionSignature(functionExpression.FunctionName, functionExpression.ArgumentNames), functionExpression);
-                    else
-                        childIter = store.AppendValues(icon, buildFunctionSignature(functionExpression.FunctionName, functionExpression.ArgumentNames), functionExpression);
+
+                    childIter = store.AppendValues(parent, icon, buildFunctionSignature(functionExpression.FunctionName, functionExpression.ArgumentNames), functionExpression);
 
                     buildTreeChildren(store, childIter, functionExpression.BodyRoot.ChildNodes);
+
                     continue;
                 }
 

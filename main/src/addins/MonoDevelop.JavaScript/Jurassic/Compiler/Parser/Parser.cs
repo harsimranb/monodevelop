@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Jurassic.Library;
 using ICSharpCode.NRefactory.TypeSystem;
 using MonoDevelop.JavaScript.TextEditor;
+using MonoDevelop.JavaScript.Factories;
 
 namespace Jurassic.Compiler
 {
@@ -455,6 +456,8 @@ namespace Jurassic.Compiler
                 // Parse a single statement.
                 result.Statements.Add(ParseStatement());
             }
+
+            result.SourceSpan = new SourceCodeSpan(this.PositionBeforeWhitespace, this.PositionAfterWhitespace);
 
             // Consume the end brace.
             this.Expect(PunctuatorToken.RightBrace);

@@ -5,6 +5,8 @@ using System.Text;
 using MonoDevelop.Ide.TypeSystem;
 using ICSharpCode.NRefactory.TypeSystem;
 using MonoDevelop.JavaScript.TextEditor;
+using ICSharpCode.NRefactory;
+using MonoDevelop.JavaScript.Factories;
 
 namespace MonoDevelop.JavaScript.Parser
 {
@@ -107,74 +109,129 @@ namespace MonoDevelop.JavaScript.Parser
 
             foreach (var node in astNodes)
             {
-                if (node is Jurassic.Compiler.FunctionStatement)
+                var function = node as Jurassic.Compiler.FunctionStatement;
+                if (function != null)
                 {
-                    var function = node as Jurassic.Compiler.FunctionStatement;
                     if (function.SourceSpan != null)
                     {
-                        var region = new DomRegion(fileName,
-                            function.SourceSpan.StartLine,
-                            function.SourceSpan.StartColumn,
-                            function.SourceSpan.EndLine,
-                            function.SourceSpan.EndColumn);
-
+                        var region = DomRegionFactory.CreateDomRegion(fileName, function.SourceSpan);
                         foldings.Add(new FoldingRegion(region));
                     }
 
                     setFoldings(function.BodyRoot.ChildNodes);
+
+                    continue;
                 }
-                else if (node is Jurassic.Compiler.BlockStatement)
+
+                var blockStatement = node as Jurassic.Compiler.BlockStatement;
+                if (blockStatement != null)
                 {
-                    var blockStatement = node as Jurassic.Compiler.BlockStatement;
                     if (blockStatement.SourceSpan != null)
                     {
-                        var region = new DomRegion(fileName,
-                            blockStatement.SourceSpan.StartLine,
-                            blockStatement.SourceSpan.StartColumn,
-                            blockStatement.SourceSpan.EndLine,
-                            blockStatement.SourceSpan.EndColumn);
+                        var region = DomRegionFactory.CreateDomRegion(fileName, blockStatement.SourceSpan);
 
                         foldings.Add(new FoldingRegion(region));
                     }
 
                     setFoldings(blockStatement.Statements);
+
+                    continue;
                 }
-                else if (node is Jurassic.Compiler.IfStatement)
+
+                var ifStatement = node as Jurassic.Compiler.IfStatement;
+                if (ifStatement != null)
                 {
-                    var ifStatement = node as Jurassic.Compiler.IfStatement;
                     if (ifStatement.SourceSpan != null)
                     {
-                        var region = new DomRegion(fileName,
-                            ifStatement.SourceSpan.StartLine,
-                            ifStatement.SourceSpan.StartColumn,
-                            ifStatement.SourceSpan.EndLine,
-                            ifStatement.SourceSpan.EndColumn);
-
+                        var region = DomRegionFactory.CreateDomRegion(fileName, ifStatement.SourceSpan);
                         foldings.Add(new FoldingRegion(region));
+                    }
+                    if (ifStatement.ElseClause != null)
+                    {
+                        if (ifStatement.ElseClause.SourceSpan != null)
+                        {
+                            var region = DomRegionFactory.CreateDomRegion(fileName, ifStatement.ElseClause.SourceSpan);
+                            foldings.Add(new FoldingRegion(region));
+                        }
+
+                        setFoldings(ifStatement.ElseClause.ChildNodes);
                     }
 
                     setFoldings(ifStatement.ChildNodes);
+
+                    continue;
                 }
-                else if (node is Jurassic.Compiler.FunctionExpression)
+
+                var functionExpression = node as Jurassic.Compiler.FunctionExpression;
+                if (functionExpression != null)
                 {
-                    var functionExpression = node as Jurassic.Compiler.FunctionExpression;
                     if (functionExpression.SourceSpan != null)
                     {
-                        var region = new DomRegion(fileName,
-                            functionExpression.SourceSpan.StartLine,
-                            functionExpression.SourceSpan.StartColumn,
-                            functionExpression.SourceSpan.EndLine,
-                            functionExpression.SourceSpan.EndColumn);
-
+                        var region = DomRegionFactory.CreateDomRegion(fileName, functionExpression.SourceSpan);
                         foldings.Add(new FoldingRegion(region));
                     }
 
                     setFoldings(functionExpression.BodyRoot.ChildNodes);
+
+                    continue;
                 }
-                else
-                { 
-                    setFoldings(node.ChildNodes);
+
+                var loopStatement = node as Jurassic.Compiler.LoopStatement;
+                if (loopStatement != null)
+                {
+                    if (loopStatement.Body != null && loopStatement.Body.SourceSpan != null)
+                    {
+                        var region = DomRegionFactory.CreateDomRegion(fileName, loopStatement.Body.SourceSpan);
+                        foldings.Add(new FoldingRegion(region));
+                    }
+
+                    setFoldings(loopStatement.Body.ChildNodes);
+
+                    continue;
                 }
+
+                var forInStatement = node as Jurassic.Compiler.ForInStatement;
+                if (forInStatement != null)
+                {
+                    if (forInStatement.SourceSpan != null)
+                    {
+                        var region = DomRegionFactory.CreateDomRegion(fileName, forInStatement.SourceSpan);
+                        foldings.Add(new FoldingRegion(region));
+                    }
+
+                    setFoldings(forInStatement.Body.ChildNodes);
+
+                    continue;
+                }
+
+                var withStatement = node as Jurassic.Compiler.WithStatement;
+                if (withStatement != null)
+                {
+                    if (withStatement.SourceSpan != null)
+                    {
+                        var region = DomRegionFactory.CreateDomRegion(fileName, withStatement.SourceSpan);
+                        foldings.Add(new FoldingRegion(region));
+                    }
+
+                    if (withStatement.Body != null)
+                        setFoldings(withStatement.Body.ChildNodes);
+
+                    continue;
+                }
+
+                var tryCatchStatement = node as Jurassic.Compiler.TryCatchFinallyStatement;
+                if (tryCatchStatement != null)
+                {
+                    if (tryCatchStatement.SourceSpan != null)
+                    {
+                        var region = DomRegionFactory.CreateDomRegion(fileName, tryCatchStatement.SourceSpan);
+                        foldings.Add(new FoldingRegion(region));
+                    }
+
+                    continue;
+                }
+
+                setFoldings(node.ChildNodes);
             }
         }
 

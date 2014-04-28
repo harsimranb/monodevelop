@@ -13,16 +13,18 @@
     <FileAlignment>512</FileAlignment>
     <ProductVersion>10.0.0</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\..\..\Program Files %28x86%29\Xamarin Studio\AddIns\MonoDevelop.JavaScript\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\..\..\..\..\Program Files %28x86%29\Xamarin Studio\AddIns\MonoDevelop.JavaScript\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,8 +33,10 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Factories\DomRegionFactory.cs" />
     <Compile Include="Jurassic\Compiler\Binders\Binder.cs" />
     <Compile Include="Jurassic\Compiler\Binders\BinderMethod.cs" />
     <Compile Include="Jurassic\Compiler\Binders\BinderUtilities.cs" />
@@ -180,7 +184,7 @@
     <Compile Include="Parser\JavaScriptParsedDocument.cs" />
     <Compile Include="Parser\JavaScriptParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TextEditor\ErrorFactory.cs" />
+    <Compile Include="Factories\ErrorFactory.cs" />
     <Compile Include="TextEditor\IconManager.cs" />
     <Compile Include="TextEditor\JavaScriptEditorExtension.cs" />
   </ItemGroup>
@@ -207,6 +211,24 @@
     <Reference Include="gtk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Mono-3.2.3\lib\mono\gtk-sharp-2.0\gtk-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.NRefactory">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\Program Files (x86)\Xamarin Studio\bin\ICSharpCode.NRefactory.dll</HintPath>
+    </Reference>
+    <Reference Include="libstetic">
+      <HintPath>..\..\..\..\..\..\..\..\Downloads\monodevelop-master\monodevelop-master\main\build\AddIns\MonoDevelop.GtkCore\libstetic.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.TextEditor">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\Program Files (x86)\Xamarin Studio\bin\Mono.TextEditor.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoDevelop.Core">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\Program Files (x86)\Xamarin Studio\bin\MonoDevelop.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoDevelop.DesignerSupport">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\Program Files (x86)\Xamarin Studio\AddIns\MonoDevelop.DesignerSupport\MonoDevelop.DesignerSupport.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoDevelop.Ide">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\Program Files (x86)\Xamarin Studio\bin\MonoDevelop.Ide.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -237,34 +259,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\external\nrefactory\ICSharpCode.NRefactory\ICSharpCode.NRefactory.csproj">
-      <Project>{3B2A5653-EC97-4001-BB9B-D90F1AF2C371}</Project>
-      <Name>ICSharpCode.NRefactory</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\external\mono-addins\Mono.Addins\Mono.Addins.csproj">
-      <Project>{91DD5A2D-9FE3-4C3C-9253-876141874DAD}</Project>
-      <Name>Mono.Addins</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\core\Mono.Texteditor\Mono.TextEditor.csproj">
-      <Project>{A2329308-3751-4DBD-9A75-5F7B8B024625}</Project>
-      <Name>Mono.TextEditor</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\core\MonoDevelop.Ide\MonoDevelop.Ide.csproj">
-      <Project>{27096E7F-C91C-4AC6-B289-6897A701DF21}</Project>
-      <Name>MonoDevelop.Ide</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\core\MonoDevelop.Core\MonoDevelop.Core.csproj">
-      <Project>{7525BB88-6142-4A26-93B9-A30C6983390A}</Project>
-      <Name>MonoDevelop.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MonoDevelop.DesignerSupport\MonoDevelop.DesignerSupport.csproj">
-      <Project>{2C24D515-4A2C-445C-8419-C09231913CFA}</Project>
-      <Name>MonoDevelop.DesignerSupport</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MonoDevelop.GtkCore\libstetic\libstetic.csproj">
-      <Project>{F870E2E7-FA64-4B2F-968A-90B36AB7AAA9}</Project>
-      <Name>libstetic</Name>
-    </ProjectReference>
-  </ItemGroup>
 </Project>
