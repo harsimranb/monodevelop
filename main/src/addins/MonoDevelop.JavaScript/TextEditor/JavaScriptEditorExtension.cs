@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using MonoDevelop.JavaScript.Extentions;
+using MonoDevelop.Core;
 
 namespace MonoDevelop.JavaScript.TextEditor
 {
@@ -137,27 +139,21 @@ namespace MonoDevelop.JavaScript.TextEditor
         {
             DispatchService.AssertGuiThread();
             Gdk.Threads.Enter();
+            refreshingOutline = false;
+            if (outlineTreeStore == null || !outlineTreeView.IsRealized)
+                return;
+            outlineTreeStore.Clear();
 
-            try
+            if (ParsedDoc != null)
             {
-                refreshingOutline = false;
-                if (outlineTreeStore == null || !outlineTreeView.IsRealized)
-                    return;
-                outlineTreeStore.Clear();
+                DateTime start = DateTime.Now;
+                refillOutlineStore(ParsedDoc, outlineTreeStore);
+                outlineTreeView.ExpandAll();
+                outlineTreeView.ExpandAll();
+                LoggingService.LogDebug("Built outline in {0}ms", (DateTime.Now - start).Milliseconds);
+            }
 
-                if (ParsedDoc != null)
-                {
-                    DateTime start = DateTime.Now;
-                    refillOutlineStore(ParsedDoc, outlineTreeStore);
-                    outlineTreeView.ExpandAll();
-                    outlineTreeView.ExpandAll();
-                    MonoDevelop.Core.LoggingService.LogDebug("Built outline in {0}ms", (DateTime.Now - start).Milliseconds);
-                }
-            }
-            finally
-            {
-                Gdk.Threads.Leave();
-            }
+            Gdk.Threads.Leave();
         }
 
         void refillOutlineStore(JavaScript.Parser.JavaScriptParsedDocument doc, Gtk.TreeStore store)
@@ -199,7 +195,7 @@ namespace MonoDevelop.JavaScript.TextEditor
                 {
                     var icon = iconManager.GetIcon(Stock.Method);
 
-                    childIter = store.AppendValues(parent, icon, buildFunctionSignature(functionStatement.FunctionName, functionStatement.ArgumentNames), functionStatement);
+                    childIter = store.AppendValues(parent, icon, functionStatement.BuildFunctionSignature(), functionStatement);
 
                     buildTreeChildren(store, childIter, functionStatement.BodyRoot.ChildNodes);
 
@@ -211,7 +207,7 @@ namespace MonoDevelop.JavaScript.TextEditor
                 {
                     var icon = iconManager.GetIcon(Stock.Method);
 
-                    childIter = store.AppendValues(parent, icon, buildFunctionSignature(functionExpression.FunctionName, functionExpression.ArgumentNames), functionExpression);
+                    childIter = store.AppendValues(parent, icon, functionExpression.BuildFunctionSignature(), functionExpression);
 
                     buildTreeChildren(store, childIter, functionExpression.BodyRoot.ChildNodes);
 
@@ -221,34 +217,6 @@ namespace MonoDevelop.JavaScript.TextEditor
 
                 buildTreeChildren(store, childIter, node.ChildNodes);
             }
-        }
-
-        string buildFunctionSignature(string functionName, IList<string> argumentNames)
-        {
-            if (string.IsNullOrWhiteSpace(functionName))
-                functionName = "function"; // for inline functions, callbacks, delegates, etc.
-
-            var builder = new StringBuilder(functionName);
-
-            builder.Append(" (");
-            if (argumentNames.Count > 0)
-            {
-                for (int i = 0; i < argumentNames.Count; i++)
-                {
-                    var currentArgument = argumentNames[i];
-                    if (i + 1 != argumentNames.Count)
-                    {
-                        builder.Append(string.Concat(currentArgument, ", "));
-                    }
-                    else
-                    {
-                        builder.Append(string.Concat(currentArgument));
-                    }
-                }
-            }
-            builder.Append(")");
-
-            return builder.ToString();
         }
 
         void selectSegment(object node)
