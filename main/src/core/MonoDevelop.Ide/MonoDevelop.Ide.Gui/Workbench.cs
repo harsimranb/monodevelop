@@ -1047,6 +1047,7 @@ namespace MonoDevelop.Ide.Gui
 			
 			List<IViewContent> docViews = new List<IViewContent> ();
 			var viewsDict = new Dictionary<IViewContent, int> ();
+			var floatsDict = new Dictionary<IViewContent, int> ();
 			var windowsDict = new Dictionary<int, SdiWorkspaceWindow> ();
 			FilePath baseDir = args.Item.BaseDirectory;
 			IViewContent currentView = null;
@@ -1067,6 +1068,9 @@ namespace MonoDevelop.Ide.Gui
 						if (view != null) {
 							viewsDict.Add (view, doc.NotebookId);
 							docViews.Add (view);
+
+							if (doc.FloatingWindowId > 0)
+								floatsDict.Add (view, doc.FloatingWindowId);
 						}
 					} 
 				}
@@ -1083,7 +1087,20 @@ namespace MonoDevelop.Ide.Gui
 				int notebookId = viewsDict [view];
 
 				if (notebookId == 0) {
-					if (view == currentView) {
+					if (floatsDict.ContainsKey (view)) {
+						var tabControl = ((DefaultWorkbench)RootWindow).TabControl;
+						var oldTabControl = ((DefaultWorkbench)RootWindow).TabControl;
+
+						for (var i = 0; i < oldTabControl.TabCount; i++) {
+							var tab = oldTabControl.GetTab (i);
+
+							if (tab.Content == tmp_window) {
+								oldTabControl.RemoveTab (tab.Index, false);
+							}
+						}
+
+						MonoDevelop.Components.DockNotebook.DockNotebookContainer.MoveToFloatingWindow (tmp_window);
+					} else if (view == currentView) {
 						Present ();
 						doc.RunWhenLoaded (() => {
 							var window = doc.Window;
