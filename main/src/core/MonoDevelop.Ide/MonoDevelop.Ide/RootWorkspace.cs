@@ -484,6 +484,7 @@ namespace MonoDevelop.Ide
 				}
 
 				IdeApp.Workbench.Splits.Clear ();
+				IdeApp.Workbench.FloatingEditors.Clear ();
 			}
 			return true;
 		}
