@@ -284,7 +284,7 @@ namespace MonoDevelop.Ide.Gui
 		int Index { get; }
 		string Text { get; set; }
 		string Markup { get; set; }
-		Pixbuf Icon { get; set; }
+		Xwt.Drawing.Image Icon { get; set; }
 		Widget Content { get; set; }
 		string Tooltip { get; set; }
 		bool Notify { get; set; }
@@ -299,7 +299,7 @@ namespace MonoDevelop.Ide.Gui
 
 		string text;
 		string markup;
-		Gdk.Pixbuf icon;
+		Xwt.Drawing.Image icon;
 		Gtk.Widget content;
 
 		internal Gdk.Rectangle Allocation;
@@ -359,7 +359,7 @@ namespace MonoDevelop.Ide.Gui
 			}
 		}
 
-		public Pixbuf Icon {
+		public Xwt.Drawing.Image Icon {
 			get {
 				return this.icon;
 			}
@@ -408,6 +408,9 @@ namespace MonoDevelop.Ide.Gui
 
 	class TabStrip: EventBox, Xwt.Motion.IAnimatable
 	{
+		static Xwt.Drawing.Image tabbarPrevImage = Xwt.Drawing.Image.FromResource ("tabbar-prev-light-12.png");
+		static Xwt.Drawing.Image tabbarNextImage = Xwt.Drawing.Image.FromResource ("tabbar-next-light-12.png");
+
 		List<Gtk.Widget> children = new List<Widget> ();
 		DockNotebook notebook;
 		DockNotebookTab highlightedTab;
@@ -479,15 +482,15 @@ namespace MonoDevelop.Ide.Gui
 			WidgetFlags |= Gtk.WidgetFlags.AppPaintable;
 			Events |= Gdk.EventMask.PointerMotionMask | Gdk.EventMask.LeaveNotifyMask | Gdk.EventMask.ButtonPressMask;
 
-			var arr = new Gtk.Image (Gdk.Pixbuf.LoadFromResource ("tabbar-prev.png"));
+			var arr = new Xwt.ImageView (tabbarPrevImage);
 			arr.HeightRequest = arr.WidthRequest = 10;
-			PreviousButton = new Button (arr);
+			PreviousButton = new Button (arr.ToGtkWidget ());
 			PreviousButton.Relief = ReliefStyle.None;
 			PreviousButton.CanDefault = PreviousButton.CanFocus = false;
 
-			arr = new Gtk.Image (Gdk.Pixbuf.LoadFromResource ("tabbar-next.png"));
+			arr = new Xwt.ImageView (tabbarNextImage);
 			arr.HeightRequest = arr.WidthRequest = 10;
-			NextButton = new Button (arr);
+			NextButton = new Button (arr.ToGtkWidget ());
 			NextButton.Relief = ReliefStyle.None;
 			NextButton.CanDefault = NextButton.CanFocus = false;
 

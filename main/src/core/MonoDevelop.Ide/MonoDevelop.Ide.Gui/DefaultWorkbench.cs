@@ -249,11 +249,12 @@ namespace MonoDevelop.Ide.Gui
 			}
 			
 			//built-ins
+			var appIcon = ImageService.GetIcon (MonoDevelop.Ide.Gui.Stock.MonoDevelop);
 			this.IconList = new Gdk.Pixbuf[] {
-				ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.MonoDevelop, Gtk.IconSize.Menu),
-				ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.MonoDevelop, Gtk.IconSize.Button),
-				ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.MonoDevelop, Gtk.IconSize.Dnd),
-				ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.MonoDevelop, Gtk.IconSize.Dialog)
+				appIcon.ToPixbuf (Gtk.IconSize.Menu),
+				appIcon.ToPixbuf (Gtk.IconSize.Button),
+				appIcon.ToPixbuf (Gtk.IconSize.Dnd),
+				appIcon.ToPixbuf (Gtk.IconSize.Dialog)
 			};
 		}
 
@@ -380,15 +381,15 @@ namespace MonoDevelop.Ide.Gui
 				}
 			}
 			
-			Gdk.Pixbuf mimeimage = null;
+			Xwt.Drawing.Image mimeimage = null;
 			
 			if (content.StockIconId != null ) {
-				mimeimage = ImageService.GetPixbuf (content.StockIconId, IconSize.Menu);
+				mimeimage = ImageService.GetIcon (content.StockIconId, IconSize.Menu);
 			}
 			else if (content.IsUntitled && content.UntitledName == null) {
-				mimeimage = DesktopService.GetPixbufForType ("gnome-fs-regular", Gtk.IconSize.Menu);
+				mimeimage = DesktopService.GetIconForType ("gnome-fs-regular", Gtk.IconSize.Menu);
 			} else {
-				mimeimage = DesktopService.GetPixbufForFile (content.ContentName ?? content.UntitledName, Gtk.IconSize.Menu);
+				mimeimage = DesktopService.GetIconForFile (content.ContentName ?? content.UntitledName, Gtk.IconSize.Menu);
 			}			
 
 			var tab = tabControl.InsertTab (-1);
@@ -1316,7 +1317,7 @@ namespace MonoDevelop.Ide.Gui
 			
 			DockItem item = dock.AddItem (padCodon.PadId);
 			item.Label = GettextCatalog.GetString (padCodon.Label);
-			item.Icon = ImageService.GetPixbuf (padCodon.Icon, IconSize.Menu);
+			item.Icon = ImageService.GetIcon (padCodon.Icon).WithSize (IconSize.Menu);
 			item.DefaultLocation = location;
 			item.DefaultVisible = false;
 			item.DefaultStatus = defaultStatus;
@@ -1365,7 +1366,7 @@ namespace MonoDevelop.Ide.Gui
 				else if (window.HasNewData && !window.ContentVisible)
 					windowTitle = "<b>" + windowTitle + "</b>";
 				item.Label = windowTitle;
-				item.Icon  = ImageService.GetPixbuf (window.Icon, IconSize.Menu);
+				item.Icon  = ImageService.GetIcon (window.Icon).WithSize (IconSize.Menu);
 			}
 		}
 		

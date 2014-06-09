@@ -40,10 +40,11 @@ using MonoDevelop.Ide.Commands;
 using MonoDevelop.Ide.Gui.Components;
 using MonoDevelop.Components.Commands;
 using Stock = MonoDevelop.Ide.Gui.Stock;
+using MonoDevelop.Components;
 
 namespace MonoDevelop.Debugger
 {
-	public class StackTracePad : Gtk.ScrolledWindow, IPadContent
+	public class StackTracePad : ScrolledWindow, IPadContent
 	{
 		const int IconColumn = 0;
 		const int MethodColumn = 1;
@@ -56,19 +57,21 @@ namespace MonoDevelop.Debugger
 		const int FrameIndexColumn = 8;
 		const int CanRefreshColumn = 9;
 
-		readonly CellRendererIcon refresh;
+		readonly CellRendererImage refresh;
 		readonly CommandEntrySet menuSet;
 		readonly PadTreeView tree;
 		readonly ListStore store;
 		IPadWindow window;
 		bool needsUpdate;
 
+		static Xwt.Drawing.Image pointerImage = Xwt.Drawing.Image.FromResource ("stack-pointer-light-16.png");
+
 		public StackTracePad ()
 		{
 			this.ShadowType = ShadowType.None;
 
-			ActionCommand evalCmd = new ActionCommand ("StackTracePad.EvaluateMethodParams", GettextCatalog.GetString ("Evaluate Method Parameters"));
-			ActionCommand gotoCmd = new ActionCommand ("StackTracePad.ActivateFrame", GettextCatalog.GetString ("Activate Stack Frame"));
+			var evalCmd = new ActionCommand ("StackTracePad.EvaluateMethodParams", GettextCatalog.GetString ("Evaluate Method Parameters"));
+			var gotoCmd = new ActionCommand ("StackTracePad.ActivateFrame", GettextCatalog.GetString ("Activate Stack Frame"));
 			
 			menuSet = new CommandEntrySet ();
 			menuSet.Add (evalCmd);
@@ -77,7 +80,7 @@ namespace MonoDevelop.Debugger
 			menuSet.AddItem (EditCommands.SelectAll);
 			menuSet.AddItem (EditCommands.Copy);
 			
-			store = new ListStore (typeof (string), typeof (string), typeof (string), typeof (string), typeof (string), typeof (string), typeof (Pango.Style), typeof (object), typeof (int), typeof (bool));
+			store = new ListStore (typeof (bool), typeof (string), typeof (string), typeof (string), typeof (string), typeof (string), typeof (Pango.Style), typeof (object), typeof (int), typeof (bool));
 
 			tree = new PadTreeView (store);
 			tree.RulesHint = true;
@@ -89,25 +92,26 @@ namespace MonoDevelop.Debugger
 			tree.ButtonPressEvent += HandleButtonPressEvent;
 			tree.DoPopupMenu = ShowPopup;
 
-			TreeViewColumn col = new TreeViewColumn ();
-			CellRenderer crp = new CellRendererIcon ();
+			var col = new TreeViewColumn ();
+			var crp = new CellRendererImage ();
 			col.PackStart (crp, false);
-			col.AddAttribute (crp, "stock_id", IconColumn);
+			crp.Image = pointerImage;
+			col.AddAttribute (crp, "visible", IconColumn);
 			tree.AppendColumn (col);
 			
-			TreeViewColumn FrameCol = new TreeViewColumn ();
-			FrameCol.Title = GettextCatalog.GetString ("Name");
-			refresh = new CellRendererIcon ();
-			refresh.Pixbuf = ImageService.GetPixbuf (Gtk.Stock.Refresh).ScaleSimple (12, 12, Gdk.InterpType.Hyper);
-			FrameCol.PackStart (refresh, false);
-			FrameCol.AddAttribute (refresh, "visible", CanRefreshColumn);
-			FrameCol.PackStart (tree.TextRenderer, true);
-			FrameCol.AddAttribute (tree.TextRenderer, "text", MethodColumn);
-			FrameCol.AddAttribute (tree.TextRenderer, "foreground", ForegroundColumn);
-			FrameCol.AddAttribute (tree.TextRenderer, "style", StyleColumn);
-			FrameCol.Resizable = true;
-			FrameCol.Alignment = 0.0f;
-			tree.AppendColumn (FrameCol);
+			col = new TreeViewColumn ();
+			col.Title = GettextCatalog.GetString ("Name");
+			refresh = new CellRendererImage ();
+			refresh.Image = ImageService.GetIcon (Gtk.Stock.Refresh).WithSize (12, 12);
+			col.PackStart (refresh, false);
+			col.AddAttribute (refresh, "visible", CanRefreshColumn);
+			col.PackStart (tree.TextRenderer, true);
+			col.AddAttribute (tree.TextRenderer, "text", MethodColumn);
+			col.AddAttribute (tree.TextRenderer, "foreground", ForegroundColumn);
+			col.AddAttribute (tree.TextRenderer, "style", StyleColumn);
+			col.Resizable = true;
+			col.Alignment = 0.0f;
+			tree.AppendColumn (col);
 
 			col = new TreeViewColumn ();
 			col.Title = GettextCatalog.GetString ("File");
@@ -134,12 +138,20 @@ namespace MonoDevelop.Debugger
 			ShowAll ();
 			UpdateDisplay ();
 			
-			DebuggingService.CallStackChanged += (EventHandler) DispatchService.GuiDispatch (new EventHandler (OnClassStackChanged));
-			DebuggingService.CurrentFrameChanged += (EventHandler) DispatchService.GuiDispatch (new EventHandler (OnFrameChanged));
+			DebuggingService.CallStackChanged += OnClassStackChanged;
+			DebuggingService.CurrentFrameChanged += OnFrameChanged;
+			DebuggingService.StoppedEvent += OnDebuggingServiceStopped;
+
 			tree.RowActivated += OnRowActivated;
 		}
 
-		bool Search (TreeModel model, int column, string key, TreeIter iter)
+		void OnDebuggingServiceStopped(object sender, EventArgs e)
+		{
+			if (store != null)
+				store.Clear();
+		}
+
+		static bool Search (TreeModel model, int column, string key, TreeIter iter)
 		{
 			string value = (string) model.GetValue (iter, column);
 
@@ -163,10 +175,10 @@ namespace MonoDevelop.Debugger
 				needsUpdate = true;
 		}
 
-		string EvaluateMethodName (StackFrame frame, EvaluationOptions options)
+		static string EvaluateMethodName (StackFrame frame, EvaluationOptions options)
 		{
-			StringBuilder method = new StringBuilder (frame.SourceLocation.MethodName);
-			ObjectValue[] args = frame.GetParameters (options);
+			var method = new StringBuilder (frame.SourceLocation.MethodName);
+			var args = frame.GetParameters (options);
 
 			if (args.Length != 0 || !frame.SourceLocation.MethodName.StartsWith ("[", StringComparison.Ordinal)) {
 				method.Append (" (");
@@ -196,11 +208,7 @@ namespace MonoDevelop.Debugger
 			var backtrace = DebuggingService.CurrentCallStack;
 
 			for (int i = 0; i < backtrace.FrameCount; i++) {
-				string icon;
-				if (i == DebuggingService.CurrentFrameIndex)
-					icon = Gtk.Stock.GoForward;
-				else
-					icon = null;
+				bool icon = i == DebuggingService.CurrentFrameIndex;
 
 				StackFrame frame = backtrace.GetFrame (i);
 				if (frame.IsDebuggerHidden)
@@ -283,9 +291,9 @@ namespace MonoDevelop.Debugger
 				int frame = (int) store.GetValue (iter, FrameIndexColumn);
 
 				if (frame == DebuggingService.CurrentFrameIndex)
-					store.SetValue (iter, IconColumn, Gtk.Stock.GoForward);
+					store.SetValue (iter, IconColumn, true);
 				else
-					store.SetValue (iter, IconColumn, null);
+					store.SetValue (iter, IconColumn, false);
 			} while (store.IterNext (ref iter));
 		}
 
@@ -299,12 +307,12 @@ namespace MonoDevelop.Debugger
 			UpdateDisplay ();
 		}
 		
-		void OnRowActivated (object o, Gtk.RowActivatedArgs args)
+		void OnRowActivated (object o, RowActivatedArgs args)
 		{
 			ActivateFrame ();
 		}
 
-		public Gtk.Widget Control {
+		public Widget Control {
 			get {
 				return this;
 			}
@@ -350,11 +358,11 @@ namespace MonoDevelop.Debugger
 				}
 			} while (store.IterNext (ref iter));
 		}
-		
+
 		[CommandHandler ("StackTracePad.ActivateFrame")]
 		void ActivateFrame ()
 		{
-			TreePath[] selected = tree.Selection.GetSelectedRows ();
+			var selected = tree.Selection.GetSelectedRows ();
 			TreeIter iter;
 
 			if (selected.Length > 0 && store.GetIter (out iter, selected[0]))
@@ -370,7 +378,7 @@ namespace MonoDevelop.Debugger
 		[CommandHandler (EditCommands.Copy)]
 		internal void OnCopy ()
 		{
-			StringBuilder txt = new StringBuilder ();
+			var txt = new StringBuilder ();
 			TreeModel model;
 			TreeIter iter;
 
@@ -391,6 +399,14 @@ namespace MonoDevelop.Debugger
 			clipboard.Text = txt.ToString ();
 			clipboard = Clipboard.Get (Gdk.Atom.Intern ("PRIMARY", false));
 			clipboard.Text = txt.ToString ();
-		}		
+		}
+
+		protected override void OnDestroyed ()
+		{
+			DebuggingService.CallStackChanged -= OnClassStackChanged;
+			DebuggingService.CurrentFrameChanged -= OnFrameChanged;
+			DebuggingService.StoppedEvent -= OnDebuggingServiceStopped;
+			base.OnDestroyed ();
+		}
 	}
 }

@@ -30,6 +30,7 @@ namespace MonoDevelop.Debugger.Win32
 		bool terminated;
 		bool evaluating;
 		bool autoStepInto;
+		bool stepInsideDebuggerHidden=false;
 		int processId;
 
 		static int evaluationTimestamp;
@@ -109,7 +110,15 @@ namespace MonoDevelop.Debugger.Win32
 			threads = null;
 			processes = null;
 			activeThread = null;
-			GC.Collect ();
+
+			ThreadPool.QueueUserWorkItem (delegate {
+				Thread.Sleep (2000);
+				GC.Collect ();
+				GC.WaitForPendingFinalizers ();
+				Thread.Sleep (20000);
+				GC.Collect ();
+				GC.WaitForPendingFinalizers ();
+			});
 		}
 
 		void TerminateDebugger ()
@@ -200,7 +209,7 @@ namespace MonoDevelop.Debugger.Win32
 
 		void OnLogMessage (object sender, CorLogMessageEventArgs e)
 		{
-			OnTargetOutput (false, e.Message);
+			OnTargetDebug (e.Level, e.LogSwitchName, e.Message);
 			e.Continue = true;
 		}
 
@@ -244,6 +253,26 @@ namespace MonoDevelop.Debugger.Win32
 			OnTargetEvent (args);
 		}
 
+		bool StepThrough (MethodInfo methodInfo)
+		{
+			var m = methodInfo.GetCustomAttributes (true);
+			if (Options.ProjectAssembliesOnly) {
+				return methodInfo.GetCustomAttributes (true).Any (v => 
+					v is System.Diagnostics.DebuggerHiddenAttribute ||
+					v is System.Diagnostics.DebuggerStepThroughAttribute ||
+					v is System.Diagnostics.DebuggerNonUserCodeAttribute);
+			} else {
+				return methodInfo.GetCustomAttributes (true).Any (v => 
+					v is System.Diagnostics.DebuggerHiddenAttribute ||
+					v is System.Diagnostics.DebuggerStepThroughAttribute);
+			}
+		}
+
+		bool ContinueOnStepIn(MethodInfo methodInfo)
+		{
+			return methodInfo.GetCustomAttributes (true).Any (v => v is System.Diagnostics.DebuggerStepperBoundaryAttribute);
+		}
+
 		static bool IsPropertyOrOperatorMethod (MethodInfo method)
 		{
 			if (method == null)
@@ -265,45 +294,58 @@ namespace MonoDevelop.Debugger.Win32
 				}
 			}
 
+			bool localAutoStepInto = autoStepInto;
+			autoStepInto = false;
+			bool localStepInsideDebuggerHidden = stepInsideDebuggerHidden;
+			stepInsideDebuggerHidden = false;
+
 			if (e.AppDomain.Process.HasQueuedCallbacks (e.Thread)) {
 				e.Continue = true;
 				return;
 			}
 
-			if (autoStepInto) {
-				autoStepInto = false;
+			if (localAutoStepInto) {
 				Step (true);
 				e.Continue = true;
 				return;
 			}
 
-			if (Options.StepOverPropertiesAndOperators && IsPropertyOrOperatorMethod (e.Thread.ActiveFrame.Function.GetMethodInfo (this))) {
+			if (ContinueOnStepIn (e.Thread.ActiveFrame.Function.GetMethodInfo (this))) {
+				e.Continue = true;
+				return;
+			}
+
+			var currentSequence = CorBacktrace.GetSequencePoint (this, e.Thread.ActiveFrame);
+			if (currentSequence == null) {
 				stepper.StepOut ();
 				autoStepInto = true;
 				e.Continue = true;
 				return;
 			}
 
-			var symbols = e.Thread.ActiveFrame.Function.GetSymbolMethod (this);
-			if (symbols == null || symbols.SequencePointCount == 0) {
+			if (StepThrough (e.Thread.ActiveFrame.Function.GetMethodInfo (this))) {
+				stepInsideDebuggerHidden = e.StepReason == CorDebugStepReason.STEP_CALL;
+				RawContinue (true, true);
+				e.Continue = true;
+				return;
+			}
+
+			if (Options.StepOverPropertiesAndOperators &&
+			    IsPropertyOrOperatorMethod (e.Thread.ActiveFrame.Function.GetMethodInfo (this)) &&
+				e.StepReason == CorDebugStepReason.STEP_CALL) {
 				stepper.StepOut ();
 				autoStepInto = true;
 				e.Continue = true;
 				return;
 			}
 
-			uint offset;
-			CorDebugMappingResult mappingResult;
-			e.Thread.ActiveFrame.GetIP (out offset, out mappingResult);
-
-			var seqFirst = symbols.GetSequencePoints ().First ();
-			if (seqFirst.Offset > offset || (seqFirst.Offset == offset && mappingResult == CorDebugMappingResult.MAPPING_APPROXIMATE)) {
-				Step (true);
+			if (currentSequence.IsSpecial) {
+				Step (false);
 				e.Continue = true;
 				return;
 			}
-			var seqLast = symbols.GetSequencePoints ().Last ();
-			if (seqLast.Offset < offset || (seqLast.Offset == offset && mappingResult == CorDebugMappingResult.MAPPING_APPROXIMATE)) {
+
+			if (localStepInsideDebuggerHidden && e.StepReason == CorDebugStepReason.STEP_RETURN) {
 				Step (true);
 				e.Continue = true;
 				return;
@@ -379,6 +421,7 @@ namespace MonoDevelop.Debugger.Win32
 			// If a breakpoint is hit while stepping, cancel the stepping operation
 			if (stepper != null && stepper.IsActive ())
 				stepper.Deactivate ();
+			autoStepInto = false;
 			SetActiveThread (e.Thread);
 			TargetEventArgs args = new TargetEventArgs (TargetEventType.TargetHitBreakpoint);
 			args.Process = GetProcess (process);
@@ -395,15 +438,6 @@ namespace MonoDevelop.Debugger.Win32
 
 		void OnUpdateModuleSymbols (object sender, CorUpdateModuleSymbolsEventArgs e)
 		{
-			SymbolBinder binder = new SymbolBinder ();
-			CorMetadataImport mi = new CorMetadataImport (e.Module);
-			ISymbolReader reader = binder.GetReaderFromStream (mi.RawCOMObject, e.Stream);
-			foreach (ISymbolDocument doc in reader.GetDocuments ()) {
-				Console.WriteLine (doc.URL);
-			}
-			var disposable = reader as IDisposable;
-			if (disposable != null)
-				disposable.Dispose ();
 			e.Continue = true;
 		}
 
@@ -574,7 +608,7 @@ namespace MonoDevelop.Debugger.Win32
 				// If an exception is thrown while stepping, cancel the stepping operation
 				if (stepper != null && stepper.IsActive ())
 					stepper.Deactivate ();
-
+				autoStepInto = false;
 				SetActiveThread (e.Thread);
 				
 				args.Process = GetProcess (process);
@@ -583,7 +617,13 @@ namespace MonoDevelop.Debugger.Win32
 				OnTargetEvent (args);	
 			}
 		}
-		
+
+		public bool IsExternalCode (string fileName)
+		{
+			return string.IsNullOrWhiteSpace (fileName)
+			|| !documents.ContainsKey (fileName);
+		}
+
 		private bool IsCatchpoint (CorException2EventArgs e)
 		{
 			// Build up the exception type hierachy
@@ -594,10 +634,13 @@ namespace MonoDevelop.Debugger.Win32
 				exceptions.Add(t.GetTypeInfo(this).FullName);
 				t = t.Base;
 			}
-			
+			if (exceptions.Count == 0)
+				return false;
 			// See if a catchpoint is set for this exception.
 			foreach (Catchpoint cp in Breakpoints.GetCatchpoints()) {
-				if (cp.Enabled && exceptions.Contains(cp.ExceptionName)) {
+				if (cp.Enabled &&
+				    ((cp.IncludeSubclasses && exceptions.Contains (cp.ExceptionName)) ||
+				    (exceptions [0] == cp.ExceptionName))) {
 					return true;
 				}
 			}
@@ -737,8 +780,7 @@ namespace MonoDevelop.Debugger.Win32
 
 		protected override BreakEventInfo OnInsertBreakEvent (BreakEvent be)
 		{
-			return MtaThread.Run (delegate
-			{
+			return MtaThread.Run (delegate {
 				var binfo = new BreakEventInfo ();
 
 				lock (documents) {
@@ -748,8 +790,7 @@ namespace MonoDevelop.Debugger.Win32
 							// FIXME: implement breaking on function name
 							binfo.SetStatus (BreakEventStatus.Invalid, null);
 							return binfo;
-						}
-						else {
+						} else {
 							DocInfo doc;
 							if (!documents.TryGetValue (System.IO.Path.GetFullPath (bp.FileName), out doc)) {
 								binfo.SetStatus (BreakEventStatus.NotBound, null);
@@ -759,24 +800,51 @@ namespace MonoDevelop.Debugger.Win32
 							int line;
 							try {
 								line = doc.Document.FindClosestLine (bp.Line);
-							}
-							catch {
+							} catch {
 								// Invalid line
 								binfo.SetStatus (BreakEventStatus.Invalid, null);
 								return binfo;
 							}
-							ISymbolMethod met = doc.Reader.GetMethodFromDocumentPosition (doc.Document, line, 0);
+							ISymbolMethod met = null;
+							if (doc.Reader is ISymbolReader2) {
+								var methods = ((ISymbolReader2)doc.Reader).GetMethodsFromDocumentPosition (doc.Document, line, 0);
+								if (methods != null && methods.Any ()) {
+									if (methods.Count () == 1) {
+										met = methods [0];
+									} else {
+										int deepest = -1;
+										foreach (var method in methods) {
+											var firstSequence = method.GetSequencePoints ().FirstOrDefault ((sp) => sp.StartLine != 0xfeefee);
+											if (firstSequence != null && firstSequence.StartLine >= deepest) {
+												deepest = firstSequence.StartLine;
+												met = method;
+											}
+										}
+									}
+								}
+							}
+							if (met == null) {
+								met = doc.Reader.GetMethodFromDocumentPosition (doc.Document, line, 0);
+							}
 							if (met == null) {
 								binfo.SetStatus (BreakEventStatus.Invalid, null);
 								return binfo;
 							}
 
 							int offset = -1;
+							int firstSpInLine = -1;
 							foreach (SequencePoint sp in met.GetSequencePoints ()) {
-								if (sp.Line == line && sp.Document.URL == doc.Document.URL) {
+								if (sp.IsInside (doc.Document.URL, line, bp.Column)) {
 									offset = sp.Offset;
 									break;
+								} else if (firstSpInLine == -1
+								           && sp.StartLine == line
+								           && sp.Document.URL.Equals (doc.Document.URL, StringComparison.OrdinalIgnoreCase)) {
+									firstSpInLine = sp.Offset;
 								}
+							}
+							if (offset == -1) {//No exact match? Use first match in that line
+								offset = firstSpInLine;
 							}
 							if (offset == -1) {
 								binfo.SetStatus (BreakEventStatus.Invalid, null);
@@ -786,7 +854,7 @@ namespace MonoDevelop.Debugger.Win32
 							CorFunction func = doc.Module.GetFunctionFromToken (met.Token.GetToken ());
 							CorFunctionBreakpoint corBp = func.ILCode.CreateBreakpoint (offset);
 							corBp.Activate (bp.Enabled);
-							breakpoints[corBp] = binfo;
+							breakpoints [corBp] = binfo;
 
 							binfo.Handle = corBp;
 							binfo.SetStatus (BreakEventStatus.Bound, null);
@@ -830,7 +898,6 @@ namespace MonoDevelop.Debugger.Win32
 		{
 			try {
 				if (stepper != null) {
-					stepper.IsActive ();
 					CorFrame frame = activeThread.ActiveFrame;
 					ISymbolReader reader = GetReaderForModule (frame.Function.Module.Name);
 					if (reader == null) {
@@ -847,30 +914,23 @@ namespace MonoDevelop.Debugger.Win32
 					CorDebugMappingResult mappingResult;
 					frame.GetIP (out offset, out mappingResult);
 
-					// Find the current line
-					SequencePoint currentSeq = null;
-					foreach (SequencePoint sp in met.GetSequencePoints ()) {
-						if (sp.Offset > offset)
-							break;
-						currentSeq = sp;
-					}
-
-					if (currentSeq == null) {
-						RawContinue (into);
-						return;
-					}
-
 					// Exclude all ranges belonging to the current line
 					List<COR_DEBUG_STEP_RANGE> ranges = new List<COR_DEBUG_STEP_RANGE> ();
-					SequencePoint lastSeq = null;
-					foreach (SequencePoint sp in met.GetSequencePoints ()) {
-						if (lastSeq != null && lastSeq.Line == currentSeq.Line) {
-							COR_DEBUG_STEP_RANGE r = new COR_DEBUG_STEP_RANGE ();
-							r.startOffset = (uint) lastSeq.Offset;
-							r.endOffset = (uint) sp.Offset;
+					var sequencePoints = met.GetSequencePoints ().ToArray ();
+					for (int i = 0; i < sequencePoints.Length; i++) {
+						if (sequencePoints [i].Offset > offset) {
+							var r = new COR_DEBUG_STEP_RANGE ();
+							r.startOffset = i == 0 ? 0 : (uint)sequencePoints [i - 1].Offset;
+							r.endOffset = (uint)sequencePoints [i].Offset;
 							ranges.Add (r);
+							break;
 						}
-						lastSeq = sp;
+					}
+					if (ranges.Count == 0 && sequencePoints.Length > 0) {
+						var r = new COR_DEBUG_STEP_RANGE ();
+						r.startOffset = (uint)sequencePoints [sequencePoints.Length - 1].Offset;
+						r.endOffset = uint.MaxValue;
+						ranges.Add (r);
 					}
 
 					stepper.StepRange (into, ranges.ToArray ());
@@ -884,9 +944,12 @@ namespace MonoDevelop.Debugger.Win32
 			}
 		}
 
-		private void RawContinue (bool into)
+		private void RawContinue (bool into, bool stepOverAll = false)
 		{
-			stepper.Step (into);
+			if (stepOverAll)
+				stepper.StepRange (into, new[]{ new COR_DEBUG_STEP_RANGE (){ startOffset = 0, endOffset = uint.MaxValue } });
+			else
+				stepper.Step (into);
 			ClearEvalStatus ();
 			process.Continue (false);
 		}
@@ -1316,13 +1379,78 @@ namespace MonoDevelop.Debugger.Win32
 				return (T)(object)new MtaRawValueString ((IRawValueString)obj);
 			return obj;
 		}
+
+		public override bool CanSetNextStatement {
+			get {
+				return true;
+			}
+		}
+
+		protected override void OnSetNextStatement (long threadId, string fileName, int line, int column)
+		{
+			if (!CanSetNextStatement)
+				throw new NotSupportedException ();
+			MtaThread.Run (delegate {
+				var thread = GetThread ((int)threadId);
+				if (thread == null)
+					throw new ArgumentException ("Unknown thread.");
+
+				CorFrame frame = thread.ActiveFrame;
+				if (frame == null)
+					throw new NotSupportedException ();
+
+				ISymbolMethod met = frame.Function.GetSymbolMethod (this);
+				if (met == null) {
+					throw new NotSupportedException ();
+				}
+
+				int offset = -1;
+				int firstSpInLine = -1;
+				foreach (SequencePoint sp in met.GetSequencePoints ()) {
+					if (sp.IsInside (fileName, line, column)) {
+						offset = sp.Offset;
+						break;
+					} else if (firstSpInLine == -1
+					           && sp.StartLine == line
+					           && sp.Document.URL.Equals (fileName, StringComparison.OrdinalIgnoreCase)) {
+						firstSpInLine = sp.Offset;
+					}
+				}
+				if (offset == -1) {//No exact match? Use first match in that line
+					offset = firstSpInLine;
+				}
+				if (offset == -1) {
+					throw new NotSupportedException ();
+				}
+				try {
+					frame.SetIP (offset);
+				} catch {
+					throw new NotSupportedException ();
+				}
+			});
+		}
 	}
 
 	class SequencePoint
 	{
-		public int Line;
+		public int StartLine;
+		public int EndLine;
+		public int StartColumn;
+		public int EndColumn;
 		public int Offset;
+		public bool IsSpecial;
 		public ISymbolDocument Document;
+
+		public bool IsInside (string fileUrl, int line, int column)
+		{
+			if (!Document.URL.Equals (fileUrl, StringComparison.OrdinalIgnoreCase))
+				return false;
+			if (line < StartLine || (line == StartLine && column < StartColumn))
+				return false;
+			if (line > EndLine || (line == EndLine && column > EndColumn))
+				return false;
+			return true;
+		}
 	}
 
 	static class SequencePointExt
@@ -1339,11 +1467,12 @@ namespace MonoDevelop.Debugger.Win32
 			met.GetSequencePoints (offsets, docs, lines, columns, endLines, endColumns);
 
 			for (int n = 0; n < sc; n++) {
-				if (columns[n] == 0)
-					continue;
 				SequencePoint sp = new SequencePoint ();
 				sp.Document = docs[n];
-				sp.Line = lines[n];
+				sp.StartLine = lines[n];
+				sp.EndLine = endLines[n];
+				sp.StartColumn = columns[n];
+				sp.EndColumn = endColumns[n];
 				sp.Offset = offsets[n];
 				yield return sp;
 			}

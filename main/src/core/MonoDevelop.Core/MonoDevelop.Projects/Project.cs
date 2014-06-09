@@ -121,9 +121,15 @@ namespace MonoDevelop.Projects
 		/// <value>
 		/// The type of the project.
 		/// </value>
-		public abstract string ProjectType {
-			get;
+		[Obsolete ("Use GetProjectTypes")]
+		public virtual string ProjectType {
+			get { return GetProjectTypes ().First (); }
 		}
+
+		/// <summary>
+		/// Gets the project type and its base types.
+		/// </summary>
+		public abstract IEnumerable<string> GetProjectTypes ();
 
 		/// <summary>
 		/// Gets or sets the icon of the project.
@@ -626,7 +632,7 @@ namespace MonoDevelop.Projects
 		{
 			ProjectConfiguration config = GetConfiguration (configuration) as ProjectConfiguration;
 			if (config == null) {
-				monitor.ReportError (GettextCatalog.GetString ("Configuration '{0}' not found in project '{1}'", config.Id, Name), null);
+				monitor.ReportError (GettextCatalog.GetString ("Configuration '{0}' not found in project '{1}'", configuration, Name), null);
 				return;
 			}
 			
@@ -985,30 +991,6 @@ namespace MonoDevelop.Projects
 		/// Occurs when a file of this project has been renamed
 		/// </summary>
 		public event ProjectFileRenamedEventHandler FileRenamedInProject;
-	}
-
-	public class UnknownProject : Project
-	{
-		public override string ProjectType {
-			get { return ""; }
-		}
-
-		public override SolutionItemConfiguration CreateConfiguration (string name)
-		{
-			return null;
-		}
-		
-		internal protected override bool OnGetCanExecute (ExecutionContext context, ConfigurationSelector configuration)
-		{
-			return false;
-		}
-		
-		protected override BuildResult OnBuild (IProgressMonitor monitor, ConfigurationSelector configuration)
-		{
-			BuildResult res = new BuildResult ();
-			res.AddError ("Unknown project type");
-			return res;
-		}
 	}
 
 	public delegate void ProjectEventHandler (Object sender, ProjectEventArgs e);

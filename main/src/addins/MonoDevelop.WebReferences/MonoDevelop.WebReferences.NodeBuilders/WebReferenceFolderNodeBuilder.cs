@@ -47,13 +47,12 @@ namespace MonoDevelop.WebReferences.NodeBuilders
 		/// <param name="label">A string containing the label of the node.</param>
 		/// <param name="icon">A Pixbif containing the icon for the node.</param>
 		/// <param name="closedIcon">A Pixbif containing the closed icon for the node.</param>
-		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, ref string label, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon)
+		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, NodeInfo nodeInfo)
 		{
 			var folder = (WebReferenceFolder) dataObject;
-			label = folder.IsWCF ? GettextCatalog.GetString ("Web Services") : GettextCatalog.GetString ("Web References");
-
-			icon = Context.GetIcon (Stock.OpenReferenceFolder);
-			closedIcon = Context.GetIcon (Stock.ClosedReferenceFolder);
+			nodeInfo.Label = folder.IsWCF ? GettextCatalog.GetString ("Web Services") : GettextCatalog.GetString ("Web References");
+			nodeInfo.Icon = Context.GetIcon (Stock.OpenReferenceFolder);
+			nodeInfo.ClosedIcon = Context.GetIcon (Stock.ClosedReferenceFolder);
 			
 		}
 		

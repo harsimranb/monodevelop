@@ -5,6 +5,7 @@ using System.Collections;
 using MonoDevelop.Core;
 using Gtk;
 using MonoDevelop.Ide;
+using MonoDevelop.Components;
 
 namespace MonoDevelop.VersionControl.Dialogs
 {
@@ -48,7 +49,7 @@ namespace MonoDevelop.VersionControl.Dialogs
 			TreeViewColumn col = new TreeViewColumn ();
 			col.Title = GettextCatalog.GetString ("Repository");
 			CellRendererText crt = new CellRendererText ();
-			CellRendererPixbuf crp = new CellRendererPixbuf ();
+			CellRendererImage crp = new CellRendererImage ();
 			col.PackStart (crp, false);
 			col.PackStart (crt, true);
 			col.AddAttribute (crp, "stock-id", IconCol);
@@ -141,9 +142,9 @@ namespace MonoDevelop.VersionControl.Dialogs
 
 			TreeIter it;
 			if (!parent.Equals (TreeIter.Zero))
-				it = store.AppendValues (parent, r, r.Name, r.VersionControlSystem.Name, false, "vcs-repository");
+				it = store.AppendValues (parent, r, r.Name, r.VersionControlSystem.Name, false, "vc-repository");
 			else
-				it = store.AppendValues (r, r.Name, r.VersionControlSystem.Name, false, "vcs-repository");
+				it = store.AppendValues (r, r.Name, r.VersionControlSystem.Name, false, "vc-repository");
 
 			try {
 				if (r.HasChildRepositories)
@@ -208,7 +209,7 @@ namespace MonoDevelop.VersionControl.Dialogs
 							repoTree.ExpandRow (store.GetPath (iter), false);
 						} else if (filled) {
 							store.SetValue (iter, FilledCol, false);
-							store.AppendValues (iter, null, "", "", true, "vcs-repository");
+							store.AppendValues (iter, null, "", "", true, "vc-repository");
 						}
 					}
 					UpdateRepoDescription ();

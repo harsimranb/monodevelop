@@ -33,6 +33,7 @@ using System.Linq;
 using ICSharpCode.NRefactory.TypeSystem;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.CodeCompletion;
+using Mono.Addins;
 using Mono.TextEditor;
 
 namespace MonoDevelop.Components.MainToolbar
@@ -63,7 +64,7 @@ namespace MonoDevelop.Components.MainToolbar
 		class NullDataSource : ISearchDataSource
 		{
 			#region ISearchDataSource implementation
-			Gdk.Pixbuf ISearchDataSource.GetIcon (int item)
+			Xwt.Drawing.Image ISearchDataSource.GetIcon (int item)
 			{
 				throw new NotImplementedException ();
 			}
@@ -120,6 +121,8 @@ namespace MonoDevelop.Components.MainToolbar
 			categories.Add (new FileSearchCategory (this));
 			categories.Add (new CommandSearchCategory (this));
 			categories.Add (new SearchInSolutionSearchCategory ());
+			categories.AddRange (AddinManager.GetExtensionObjects<SearchCategory> ("/MonoDevelop/Ide/SearchCategories"));
+
 			layout = new Pango.Layout (PangoContext);
 			headerLayout = new Pango.Layout (PangoContext);
 
@@ -143,6 +146,7 @@ namespace MonoDevelop.Components.MainToolbar
 				}
 			};*/
 		}
+
 		bool inResize = false;
 
 		public bool SearchForMembers {
@@ -198,7 +202,7 @@ namespace MonoDevelop.Components.MainToolbar
 			// in case of 'string:' it's not clear if the user ment 'tag:pattern'  or 'pattern:line' therefore guess
 			// 'tag:', if no valid tag is found guess 'pattern:'
 			if (!string.IsNullOrEmpty (pattern.Tag) && string.IsNullOrEmpty (pattern.Pattern) && !categories.Any (c => c.IsValidTag (pattern.Tag))) {
-				pattern = new SearchPopupSearchPattern (null, pattern.Tag, pattern.LineNumber, pattern.Column);
+				pattern = new SearchPopupSearchPattern (null, pattern.Tag, pattern.LineNumber, pattern.Column, pattern.UnparsedPattern);
 			}
 
 			this.pattern = pattern;
@@ -884,8 +888,7 @@ namespace MonoDevelop.Components.MainToolbar
 
 				var px = dataSrc.GetIcon (i);
 				if (px != null) {
-					Gdk.CairoHelper.SetSourcePixbuf (context, px, (int)x + marginIconSpacing, (int)y + (h - px.Height) / 2);
-					context.Paint ();
+					context.DrawImage (this, px, (int)x + marginIconSpacing, (int)y + (h - px.Height) / 2);
 					x += px.Width + iconTextSpacing + marginIconSpacing;
 				}
 
@@ -934,8 +937,7 @@ namespace MonoDevelop.Components.MainToolbar
 
 					var px = dataSrc.GetIcon (i);
 					if (px != null) {
-						Gdk.CairoHelper.SetSourcePixbuf (context, px, (int)x + marginIconSpacing, (int)y + (h - px.Height) / 2);
-						context.Paint ();
+						context.DrawImage (this, px, (int)x + marginIconSpacing, (int)y + (h - px.Height) / 2);
 						x += px.Width + iconTextSpacing + marginIconSpacing;
 					}
 

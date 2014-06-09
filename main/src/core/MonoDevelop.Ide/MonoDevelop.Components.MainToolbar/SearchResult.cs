@@ -71,7 +71,7 @@ namespace MonoDevelop.Components.MainToolbar
 		public virtual int Column { get { return -1; } }
 		
 		public abstract string File { get; }
-		public abstract Gdk.Pixbuf Icon { get; }
+		public abstract Xwt.Drawing.Image Icon { get; }
 		
 		public abstract string Description { get; }
 		public string MatchedString { get; private set;}
@@ -127,9 +127,9 @@ namespace MonoDevelop.Components.MainToolbar
 			get { return type.Region.FileName; }
 		}
 		
-		public override Gdk.Pixbuf Icon {
+		public override Xwt.Drawing.Image Icon {
 			get {
-				return ImageService.GetPixbuf (type.GetStockIcon (false), IconSize.Menu);
+				return ImageService.GetIcon (type.GetStockIcon (false), IconSize.Menu);
 			}
 		}
 		
@@ -225,9 +225,9 @@ namespace MonoDevelop.Components.MainToolbar
 			}
 		}
 		
-		public override Gdk.Pixbuf Icon {
+		public override Xwt.Drawing.Image Icon {
 			get {
-				return DesktopService.GetPixbufForFile (file.FilePath, IconSize.Menu);
+				return DesktopService.GetIconForFile (file.FilePath, IconSize.Menu);
 			}
 		}
 
@@ -294,9 +294,9 @@ namespace MonoDevelop.Components.MainToolbar
 			get { return member.DeclaringTypeDefinition.Region.FileName; }
 		}
 		
-		public override Gdk.Pixbuf Icon {
+		public override Xwt.Drawing.Image Icon {
 			get {
-				return ImageService.GetPixbuf (member.GetStockIcon (false), IconSize.Menu);
+				return ImageService.GetIcon (member.GetStockIcon (false), IconSize.Menu);
 			}
 		}
 		
@@ -386,9 +386,9 @@ namespace MonoDevelop.Components.MainToolbar
 			}
 		}
 
-		public override Pixbuf Icon {
+		public override Xwt.Drawing.Image Icon {
 			get {
-				return ImageService.GetPixbuf ("md-command", IconSize.Menu);
+				return ImageService.GetIcon ("md-command", IconSize.Menu);
 			}
 		}
 

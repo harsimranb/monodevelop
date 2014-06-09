@@ -33,6 +33,7 @@ using Gdk;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.Gui;
 using Mono.TextEditor;
+using ICSharpCode.NRefactory;
 
 namespace MonoDevelop.Components
 {
@@ -44,9 +45,9 @@ namespace MonoDevelop.Components
 	
 	public class PathEntry 
 	{
-		Gdk.Pixbuf darkIcon;
+		Xwt.Drawing.Image darkIcon;
 
-		public Gdk.Pixbuf Icon {
+		public Xwt.Drawing.Image Icon {
 			get;
 			private set;
 		}
@@ -71,7 +72,7 @@ namespace MonoDevelop.Components
 			set;
 		}
 		
-		public PathEntry (Gdk.Pixbuf icon, string markup)
+		public PathEntry (Xwt.Drawing.Image icon, string markup)
 		{
 			this.Icon = icon;
 			this.Markup = markup;
@@ -101,14 +102,14 @@ namespace MonoDevelop.Components
 			}
 		}
 
-		internal Gdk.Pixbuf DarkIcon {
+		internal Xwt.Drawing.Image DarkIcon {
 			get {
 				if (darkIcon == null && Icon != null) {
 					darkIcon = Icon;
-					if (Styles.BreadcrumbGreyscaleIcons)
+/*					if (Styles.BreadcrumbGreyscaleIcons)
 						darkIcon = ImageService.MakeGrayscale (darkIcon);
 					if (Styles.BreadcrumbInvertedIcons)
-						darkIcon = ImageService.MakeInverted (darkIcon);
+						darkIcon = ImageService.MakeInverted (darkIcon);*/
 				}
 				return darkIcon;
 			}
@@ -165,6 +166,14 @@ namespace MonoDevelop.Components
 			this.createMenuForItem = createMenuForItem;
 			EnsureLayout ();
 		}
+
+		internal static string GetFirstLineFromMarkup (string markup)
+		{
+			var idx = markup.IndexOfAny (new [] { NewLine.CR, NewLine.LF }); 
+			if (idx >= 0)
+				return markup.Substring (0, idx);
+			return markup;
+		}
 		
 		public new PathEntry[] Path { get; private set; }
 		public int ActiveIndex { get { return activeIndex; } }
@@ -216,6 +225,21 @@ namespace MonoDevelop.Components
 			requisition.Width = Math.Max (WidthRequest, 0);
 			requisition.Height = height + topPadding + bottomPadding;
 		}
+
+		int[] GetCurrentWidths (out bool widthReduced)
+		{
+			int totalWidth = widths.Sum ();
+			totalWidth += leftPadding + (arrowSize + arrowRightPadding) * leftPath.Length - 1;
+			totalWidth += rightPadding + arrowSize * rightPath.Length - 1;
+			int[] currentWidths = widths;
+			widthReduced = false;
+			int overflow = totalWidth - Allocation.Width;
+			if (overflow > 0) {
+				currentWidths = ReduceWidths (overflow);
+				widthReduced = true;
+			}
+			return currentWidths;
+		}
 		
 		protected override bool OnExposeEvent (EventExpose evnt)
 		{
@@ -234,18 +258,8 @@ namespace MonoDevelop.Components
 
 				// Calculate the total required with, and the reduction to be applied in case it doesn't fit the available space
 
-				int totalWidth = widths.Sum ();
-				totalWidth += leftPadding + (arrowSize + arrowRightPadding) * leftPath.Length - 1;
-				totalWidth += rightPadding + arrowSize * rightPath.Length - 1;
-
-				int[] currentWidths = widths;
-				bool widthReduced = false;
-
-				int overflow = totalWidth - Allocation.Width;
-				if (overflow > 0) {
-					currentWidths = ReduceWidths (overflow);
-					widthReduced = true;
-				}
+				bool widthReduced;
+				var currentWidths = GetCurrentWidths (out widthReduced);
 
 				// Render the paths
 
@@ -265,14 +279,13 @@ namespace MonoDevelop.Components
 
 					int textOffset = 0;
 					if (leftPath [i].DarkIcon != null) {
-						int iy = (height - leftPath [i].DarkIcon.Height) / 2 + topPadding;
-						Gdk.CairoHelper.SetSourcePixbuf (ctx, leftPath [i].DarkIcon, x, iy);
-						ctx.Paint ();
-						textOffset += leftPath [i].DarkIcon.Width + iconSpacing;
+						int iy = (height - (int)leftPath [i].DarkIcon.Height) / 2 + topPadding;
+						ctx.DrawImage (this, leftPath [i].DarkIcon, x, iy);
+						textOffset += (int) leftPath [i].DarkIcon.Width + iconSpacing;
 					}
 					
 					layout.Attributes = (i == activeIndex) ? boldAtts : null;
-					layout.SetMarkup (leftPath [i].Markup);
+					layout.SetMarkup (GetFirstLineFromMarkup (leftPath [i].Markup));
 
 					ctx.Save ();
 
@@ -292,7 +305,7 @@ namespace MonoDevelop.Components
 						// Text
 						ctx.SetSourceColor (Styles.BreadcrumbTextColor.ToCairoColor ());
 						ctx.MoveTo (x + textOffset, textTopPadding);
-						PangoCairoHelper.ShowLayout (ctx, layout);
+						Pango.CairoHelper.ShowLayout (ctx, layout);
 					}
 					ctx.Restore ();
 
@@ -325,13 +338,12 @@ namespace MonoDevelop.Components
 					
 					int textOffset = 0;
 					if (rightPath [i].DarkIcon != null) {
-						Gdk.CairoHelper.SetSourcePixbuf (ctx, rightPath [i].DarkIcon, x, ypos);
-						ctx.Paint ();
-						textOffset += rightPath [i].DarkIcon.Width + padding;
+						ctx.DrawImage (this, rightPath [i].DarkIcon, x, ypos);
+						textOffset += (int) rightPath [i].DarkIcon.Width + padding;
 					}
 					
 					layout.Attributes = (i == activeIndex) ? boldAtts : null;
-					layout.SetMarkup (rightPath [i].Markup);
+					layout.SetMarkup (GetFirstLineFromMarkup (rightPath [i].Markup));
 
 					ctx.Save ();
 
@@ -351,7 +363,7 @@ namespace MonoDevelop.Components
 						// Text
 						ctx.SetSourceColor (Styles.BreadcrumbTextColor.ToCairoColor ());
 						ctx.MoveTo (x + textOffset, textTopPadding);
-						PangoCairoHelper.ShowLayout (ctx, layout);
+						Pango.CairoHelper.ShowLayout (ctx, layout);
 					}
 
 					ctx.Restore ();
@@ -482,18 +494,21 @@ namespace MonoDevelop.Components
 		
 		public int GetHoverXPosition (out int w)
 		{
+			bool widthReduced;
+			int[] currentWidths = GetCurrentWidths (out widthReduced);
+
 			if (Path[hoverIndex].Position == EntryPosition.Left) {
 				int idx = leftPath.TakeWhile (p => p != Path[hoverIndex]).Count ();
 				
 				if (idx >= 0) {
-					w = widths[idx];
-					return widths.Take (idx).Sum () + idx * spacing;
+					w = currentWidths[idx];
+					return currentWidths.Take (idx).Sum () + idx * spacing;
 				}
 			} else {
 				int idx = rightPath.TakeWhile (p => p != Path[hoverIndex]).Count ();
 				if (idx >= 0) {
-					w = widths[idx + leftPath.Length];
-					return Allocation.Width - padding - widths[idx + leftPath.Length] - spacing;
+					w = currentWidths[idx + leftPath.Length];
+					return Allocation.Width - padding - currentWidths[idx + leftPath.Length] - spacing;
 				}
 			}
 			w = Allocation.Width;
@@ -589,20 +604,21 @@ namespace MonoDevelop.Components
 			int xpos = padding, xposRight = Allocation.Width - padding;
 			if (widths == null || x < xpos || x > xposRight)
 				return -1;
-			
-			//could do a binary search, but probably not worth it
-			for (int i = 0; i < leftPath.Length; i++) {
-				xpos += widths[i] + spacing;
-				if (x < xpos)
-					return IndexOf (leftPath[i]);
-			}
-			
+
+			bool widthReduced;
+			int[] currentWidths = GetCurrentWidths (out widthReduced);
+
 			for (int i = 0; i < rightPath.Length; i++) {
-				xposRight -= widths[i + leftPath.Length] - spacing;
+				xposRight -= currentWidths[i + leftPath.Length] + spacing;
 				if (x > xposRight)
 					return IndexOf (rightPath[i]);
 			}
-			
+
+			for (int i = 0; i < leftPath.Length; i++) {
+				xpos += currentWidths[i] + spacing;
+				if (x < xpos)
+					return IndexOf (leftPath[i]);
+			}
 			return -1;
 		}
 		
@@ -621,14 +637,14 @@ namespace MonoDevelop.Components
 
 			for (int i = 0; i < path.Length; i++) {
 				layout.Attributes = (i == activeIndex)? boldAtts : null;
-				layout.SetMarkup (path[i].Markup);
+				layout.SetMarkup (GetFirstLineFromMarkup (path[i].Markup));
 				layout.Width = -1;
 				int w, h;
 				layout.GetPixelSize (out w, out h);
 				textHeight = Math.Max (h, textHeight);
 				if (path[i].DarkIcon != null) {
-					maxIconHeight = Math.Max (path[i].DarkIcon.Height, maxIconHeight);
-					w += path[i].DarkIcon.Width + iconSpacing;
+					maxIconHeight = Math.Max ((int)path[i].DarkIcon.Height, maxIconHeight);
+					w += (int)path[i].DarkIcon.Width + iconSpacing;
 				}
 				result[i + index] = w;
 			}

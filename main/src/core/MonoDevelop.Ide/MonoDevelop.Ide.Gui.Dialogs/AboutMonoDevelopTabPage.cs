@@ -27,32 +27,29 @@
 //
 //
 using System;
-using System.IO;
-using System.Text;
 
 using MonoDevelop.Components;
 using MonoDevelop.Core;
-using MonoDevelop.Ide.Gui;
 
-using Gdk;
 using Gtk;
-using GLib;
-using Pango;
-using System.Reflection;
 
 namespace MonoDevelop.Ide.Gui.Dialogs
 {
 	class AboutMonoDevelopTabPage: VBox
 	{
-		Pixbuf imageSep;
+		Xwt.Drawing.Image imageSep;
 
 		public AboutMonoDevelopTabPage ()
 		{
 			BorderWidth = 0;
 
-			using (var stream = BrandingService.GetStream ("AboutImage.png", true))
-				imageSep = new Pixbuf (stream);
-			PackStart (new Gtk.Image (imageSep), false, false, 0);
+			var aboutFile = BrandingService.GetFile ("AboutImage.png");
+			if (aboutFile != null)
+				imageSep = Xwt.Drawing.Image.FromFile (aboutFile);
+			else
+				imageSep = Xwt.Drawing.Image.FromResource ("AboutImage.png");
+
+			PackStart (new ImageView (imageSep), false, false, 0);
 
 			Xwt.VBox infoBox = new Xwt.VBox ();
 			Xwt.FrameBox mbox = new Xwt.FrameBox (infoBox);
@@ -87,14 +84,14 @@ namespace MonoDevelop.Ide.Gui.Dialogs
 				Spacing = 0,
 				MarginLeft = 12
 			};
-			cbox.PackStart (new Xwt.Label ("© 2011-2013 "));
+			cbox.PackStart (new Xwt.Label ("© 2011-" + DateTime.Now.Year + " "));
 			cbox.PackStart (new Xwt.LinkLabel () {
 				Text = string.Format ("Xamarin Inc."),
 				Uri = new Uri ("http://www.xamarin.com")
 			});
 			infoBox.PackStart (cbox);
 			infoBox.PackStart (new Xwt.Label () {
-				Text = "© 2004-2013 MonoDevelop contributors",
+				Text = "© 2004-" + DateTime.Now.Year + " MonoDevelop contributors",
 				MarginLeft = 12
 			});
 

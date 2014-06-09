@@ -21,22 +21,22 @@ namespace MonoDevelop.VersionControl
 {
 	public class VersionControlService
 	{
-		static Gdk.Pixbuf overlay_modified;
-		static Gdk.Pixbuf overlay_removed;
-		static Gdk.Pixbuf overlay_conflicted;
-		static Gdk.Pixbuf overlay_added;
-		internal static Gdk.Pixbuf overlay_controled;
-		static Gdk.Pixbuf overlay_unversioned;
-		static Gdk.Pixbuf overlay_protected;
-		static Gdk.Pixbuf overlay_locked;
-		static Gdk.Pixbuf overlay_unlocked;
-//		static Gdk.Pixbuf overlay_normal;
+		static Xwt.Drawing.Image overlay_modified;
+		static Xwt.Drawing.Image overlay_removed;
+		static Xwt.Drawing.Image overlay_conflicted;
+		static Xwt.Drawing.Image overlay_added;
+		internal static Xwt.Drawing.Image overlay_controled;
+		static Xwt.Drawing.Image overlay_unversioned;
+		static Xwt.Drawing.Image overlay_protected;
+		static Xwt.Drawing.Image overlay_locked;
+		static Xwt.Drawing.Image overlay_unlocked;
+        static Xwt.Drawing.Image overlay_ignored;
 
-		static Gdk.Pixbuf icon_modified;
-		static Gdk.Pixbuf icon_removed;
-		static Gdk.Pixbuf icon_conflicted;
-		static Gdk.Pixbuf icon_added;
-		internal static Gdk.Pixbuf icon_controled;
+		static Xwt.Drawing.Image icon_modified;
+		static Xwt.Drawing.Image icon_removed;
+		static Xwt.Drawing.Image icon_conflicted;
+		static Xwt.Drawing.Image icon_added;
+		internal static Xwt.Drawing.Image icon_controled;
 		
 		static Hashtable comments;
 		static object commentsLock = new object ();
@@ -55,22 +55,22 @@ namespace MonoDevelop.VersionControl
 		{
 			IdeApp.Initialized += delegate {
 				try {
-					overlay_modified = Gdk.Pixbuf.LoadFromResource ("overlay_modified.png");
-					overlay_removed = Gdk.Pixbuf.LoadFromResource ("overlay_removed.png");
-					overlay_conflicted = Gdk.Pixbuf.LoadFromResource ("overlay_conflicted.png");
-					overlay_added = Gdk.Pixbuf.LoadFromResource ("overlay_added.png");
-					overlay_controled = Gdk.Pixbuf.LoadFromResource ("overlay_controled.png");
-					overlay_unversioned = Gdk.Pixbuf.LoadFromResource ("overlay_unversioned.png");
-					overlay_protected = Gdk.Pixbuf.LoadFromResource ("overlay_lock_required.png");
-					overlay_unlocked = Gdk.Pixbuf.LoadFromResource ("overlay_unlocked.png");
-					overlay_locked = Gdk.Pixbuf.LoadFromResource ("overlay_locked.png");
-		//			overlay_normal = Gdk.Pixbuf.LoadFromResource("overlay_normal.png");
+					overlay_modified = Xwt.Drawing.Image.FromResource("modified-overlay-light-16.png");
+					overlay_removed = Xwt.Drawing.Image.FromResource("removed-overlay-light-16.png");
+					overlay_conflicted = Xwt.Drawing.Image.FromResource("conflict-overlay-light-16.png");
+					overlay_added = Xwt.Drawing.Image.FromResource("added-overlay-light-16.png");
+					overlay_controled = Xwt.Drawing.Image.FromResource("versioned-overlay-light-16.png");
+					overlay_unversioned = Xwt.Drawing.Image.FromResource("unversioned-overlay-light-16.png");
+					overlay_protected = Xwt.Drawing.Image.FromResource("lock-required-overlay-light-16.png");
+					overlay_unlocked = Xwt.Drawing.Image.FromResource("unlocked-overlay-light-16.png");
+					overlay_locked = Xwt.Drawing.Image.FromResource("locked-overlay-light-16.png");
+					overlay_ignored = Xwt.Drawing.Image.FromResource("ignored-overlay-light-16.png");
 
-					icon_modified = ImageService.GetPixbuf ("gtk-edit", Gtk.IconSize.Menu);
-					icon_removed = ImageService.GetPixbuf (Gtk.Stock.Remove, Gtk.IconSize.Menu);
-					icon_conflicted = ImageService.GetPixbuf (Gtk.Stock.DialogWarning, Gtk.IconSize.Menu);
-					icon_added = ImageService.GetPixbuf (Gtk.Stock.Add, Gtk.IconSize.Menu);
-					icon_controled = Gdk.Pixbuf.LoadFromResource ("overlay_controled.png");
+					icon_modified = ImageService.GetIcon ("vc-file-modified", Gtk.IconSize.Menu);
+					icon_removed = ImageService.GetIcon ("vc-file-removed", Gtk.IconSize.Menu);
+					icon_conflicted = ImageService.GetIcon ("vc-file-conflicted", Gtk.IconSize.Menu);
+					icon_added = ImageService.GetIcon ("vc-file-added", Gtk.IconSize.Menu);
+					icon_controled = Xwt.Drawing.Image.FromResource("versioned-overlay-light-16.png");
 				} catch (Exception e) {
 					LoggingService.LogError ("Error while loading icons.", e);
 				}
@@ -112,8 +112,11 @@ namespace MonoDevelop.VersionControl
 			}
 		}
 		
-		public static Gdk.Pixbuf LoadOverlayIconForStatus(VersionStatus status)
+		public static Xwt.Drawing.Image LoadOverlayIconForStatus(VersionStatus status)
 		{
+			if ((status & VersionStatus.Ignored) != 0)
+				return overlay_ignored;
+
 			if ((status & VersionStatus.Versioned) == 0)
 				return overlay_unversioned;
 			
@@ -143,7 +146,7 @@ namespace MonoDevelop.VersionControl
 			return null;
 		}
 		
-		public static Gdk.Pixbuf LoadIconForStatus (VersionStatus status)
+		public static Xwt.Drawing.Image LoadIconForStatus (VersionStatus status)
 		{
 			switch (status & VersionStatus.LocalChangesMask) {
 				case VersionStatus.Modified:
@@ -342,7 +345,7 @@ namespace MonoDevelop.VersionControl
 						return;
 					}
 				
-					FileService.EnsureDirectoryExists (file.ParentDirectory);
+					Directory.CreateDirectory (file.ParentDirectory);
 					stream = new FileStream (file, FileMode.Create, FileAccess.Write);
 					BinaryFormatter formatter = new BinaryFormatter ();
 					formatter.Serialize (stream, comments);
@@ -356,40 +359,57 @@ namespace MonoDevelop.VersionControl
 			}
 		}
 		
-		internal static bool NotifyPrepareCommit (Repository repo, ChangeSet changeSet)
+		internal static void NotifyPrepareCommit (Repository repo, ChangeSet changeSet)
 		{
+			if (!DispatchService.IsGuiThread) {
+				Gtk.Application.Invoke (delegate {
+					NotifyPrepareCommit (repo, changeSet);
+				});
+				return;
+			}
+
 			if (PrepareCommit != null) {
 				try {
 					PrepareCommit (null, new CommitEventArgs (repo, changeSet, false));
 				} catch (Exception ex) {
 					MessageService.ShowException (ex);
-					return false;
 				}
 			}
-			return true;
 		}
 		
-		internal static bool NotifyBeforeCommit (Repository repo, ChangeSet changeSet)
+		internal static void NotifyBeforeCommit (Repository repo, ChangeSet changeSet)
 		{
+			if (!DispatchService.IsGuiThread) {
+				Gtk.Application.Invoke (delegate {
+					NotifyBeforeCommit (repo, changeSet);
+				});
+				return;
+			}
+
 			if (BeginCommit != null) {
 				try {
 					BeginCommit (null, new CommitEventArgs (repo, changeSet, false));
 				} catch (Exception ex) {
 					MessageService.ShowException (ex);
-					return false;
 				}
 			}
-			return true;
 		}
 		
-		internal static bool NotifyAfterCommit (Repository repo, ChangeSet changeSet, bool success)
+		internal static void NotifyAfterCommit (Repository repo, ChangeSet changeSet, bool success)
 		{
+			if (!DispatchService.IsGuiThread) {
+				Gtk.Application.Invoke (delegate {
+					NotifyAfterCommit (repo, changeSet, success);
+				});
+				return;
+			}
+
 			if (EndCommit != null) {
 				try {
 					EndCommit (null, new CommitEventArgs (repo, changeSet, success));
 				} catch (Exception ex) {
 					MessageService.ShowException (ex);
-					return false;
+					return;
 				}
 			}
 			if (success) {
@@ -397,7 +417,6 @@ namespace MonoDevelop.VersionControl
 					SetCommitComment (it.LocalPath, null, false);
 				SaveComments ();
 			}
-			return true;
 		}
 
 		public static void NotifyFileStatusChanged (IEnumerable<VersionControlItem> items) 
@@ -478,8 +497,8 @@ namespace MonoDevelop.VersionControl
 		static void SolutionItemAddFiles (string rootPath, SolutionItem entry, HashSet<string> files)
 		{
 			if (entry is SolutionEntityItem) {
-				string file = ((SolutionEntityItem)entry).FileName;
-				SolutionItemAddFile (rootPath, files, file);
+				foreach (var file in ((SolutionEntityItem)entry).GetItemFiles (false))
+					SolutionItemAddFile (rootPath, files, file);
 			}
 			
 			if (entry is Project) {

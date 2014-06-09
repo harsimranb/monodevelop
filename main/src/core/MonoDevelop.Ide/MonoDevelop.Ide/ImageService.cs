@@ -35,6 +35,8 @@ using MonoDevelop.Components;
 using System.Text;
 using System.Linq;
 using MonoDevelop.Ide.Gui.Components;
+using System.Threading.Tasks;
+using System.Net;
 
 namespace MonoDevelop.Ide
 {
@@ -53,7 +55,6 @@ namespace MonoDevelop.Ide
 
 		static List<RuntimeAddin> addins = new List<RuntimeAddin> ();
 		static Dictionary<string, string> composedIcons = new Dictionary<string, string> ();
-		static Dictionary<Gdk.Pixbuf, string> namedIcons = new Dictionary<Gdk.Pixbuf, string> ();
 
 		// Dictionary of extension nodes by stock icon id. It holds nodes that have not yet been loaded
 		static Dictionary<string, List<StockIconCodon>> iconStock = new Dictionary<string, List<StockIconCodon>> ();
@@ -64,7 +65,7 @@ namespace MonoDevelop.Ide
 		{
 			iconFactory.AddDefault ();
 			IconId.IconNameRequestHandler = delegate (string stockId) {
-				EnsureStockIconIsLoaded (stockId, Gtk.IconSize.Menu);
+				EnsureStockIconIsLoaded (stockId);
 			};
 			
 			AddinManager.AddExtensionNodeHandler ("/MonoDevelop/Core/StockIcons", delegate (object sender, ExtensionNodeEventArgs args) {
@@ -74,6 +75,8 @@ namespace MonoDevelop.Ide
 					if (!iconStock.ContainsKey (iconCodon.StockId))
 						iconStock[iconCodon.StockId] = new List<StockIconCodon> ();
 					iconStock[iconCodon.StockId].Add (iconCodon);
+					if (iconCodon.Addin == AddinManager.CurrentAddin)
+						EnsureStockIconIsLoaded (iconCodon.StockId);
 					break;
 				}
 			});
@@ -84,6 +87,10 @@ namespace MonoDevelop.Ide
 					w = h = -1;
 				iconSizes[i].Width = w;
 				iconSizes[i].Height = h;
+			}
+			if (Platform.IsWindows) {
+				iconSizes[(int)Gtk.IconSize.Menu].Width = 16;
+				iconSizes[(int)Gtk.IconSize.Menu].Height = 16;
 			}
 		}
 		
@@ -136,6 +143,7 @@ namespace MonoDevelop.Ide
 				} else if (!string.IsNullOrEmpty (iconCodon.IconId)) {
 					var id = GetStockIdForImageSpec (iconCodon.Addin, iconCodon.IconId, iconCodon.IconSize);
 					pixbuf = GetPixbuf (id, iconCodon.IconSize);
+					pixbuf2x = Get2xIconVariant (pixbuf);
 					// This may be an animation, get it
 					animationFactory.TryGetValue (id, out animatedIcon);
 				} else if (!string.IsNullOrEmpty (iconCodon.Animation)) {
@@ -172,117 +180,50 @@ namespace MonoDevelop.Ide
 			Mono.TextEditor.GtkWorkarounds.Set2xVariant (px, variant2x);
 		}
 
-		public static Gdk.Pixbuf ScaleIcon (Gdk.Pixbuf px, int width, int height)
+		static Dictionary<string,Xwt.Drawing.Image> icons = new Dictionary<string, Xwt.Drawing.Image> ();
+
+		public static Xwt.Drawing.Image GetIcon (string name, Gtk.IconSize size)
 		{
-			var res = px.ScaleSimple (width, height, Gdk.InterpType.Bilinear);
-			
-			var icon2x = Get2xIconVariant (px);
-			if (icon2x != null)
-				Set2xIconVariant (res, ScaleIcon (icon2x, width*2, height * 2));
-			return res;
+			return GetIcon (name).WithSize (size);
 		}
 
-		//caller should check that sizes match
-		public static Gdk.Pixbuf MergeIcons (Gdk.Pixbuf icon1, Gdk.Pixbuf icon2)
+		public static Xwt.Drawing.Image GetIcon (string name)
 		{
-			if (icon2 == null)
-				return icon1;
-			if (icon1 == null)
-				return icon2;
+			return GetIcon (name, true);
+		}
 
-			Gdk.Pixbuf res = new Gdk.Pixbuf (icon1.Colorspace, icon1.HasAlpha, icon1.BitsPerSample, icon1.Width, icon1.Height);
-			res.Fill (0);
-			icon1.CopyArea (0, 0, icon1.Width, icon1.Height, res, 0, 0);
-			icon2.Composite (res, 0, 0, icon2.Width, icon2.Height, 0, 0, 1, 1, Gdk.InterpType.Bilinear, 255);
+		public static Xwt.Drawing.Image GetIcon (string name, bool generateDefaultIcon)
+		{
+			name = name ?? "";
 
-			var icon1_2x = Get2xIconVariant (icon1);
-			var icon2_2x = Get2xIconVariant (icon2);
+			Xwt.Drawing.Image img;
+			if (icons.TryGetValue (name, out img))
+				return img; 
 
-			if (icon1_2x != null || icon2_2x != null) {
-				if (icon1_2x == null)
-					icon1_2x = ScaleIcon (icon1, icon1.Width * 2, icon1.Height * 2);
-				if (icon2_2x == null)
-					icon2_2x = ScaleIcon (icon2, icon2.Width * 2, icon2.Height * 2);
-				var res2x = MergeIcons (icon1_2x, icon2_2x);
-				Set2xIconVariant (res, res2x);
+			if (string.IsNullOrEmpty (name)) {
+				LoggingService.LogWarning ("Empty icon requested. Stack Trace: " + Environment.NewLine + Environment.StackTrace);
+				icons [name] = img = CreateColorIcon ("#FF0000");
+				return img;
 			}
 
-			return res;
-		}
-
-		public static Gdk.Pixbuf MakeTransparent (Gdk.Pixbuf icon, double opacity)
-		{
-			Gdk.Pixbuf result = icon.Copy ();
-			result.Fill (0);
-			result = result.AddAlpha (true, 0, 0, 0);
-			icon.Composite (result, 0, 0, icon.Width, icon.Height, 0, 0, 1, 1, Gdk.InterpType.Bilinear, (int)(256 * opacity));
-
-			var icon2x = Get2xIconVariant (icon);
-			if (icon2x != null)
-				Set2xIconVariant (result, MakeTransparent (icon2x, opacity));
-
-			return result;
-		}
-
-		/// <summary>
-		/// This creates a new gray scale pixbuf. Note that this pixbuf needs to be disposed.
-		/// </summary>
-		/// <param name="icon">
-		/// A <see cref="Gdk.Pixbuf"/>.
-		/// </param>
-		/// <returns>
-		/// A <see cref="Gdk.Pixbuf"/> gray scale version of "icon".
-		/// </returns>
-		public static Gdk.Pixbuf MakeGrayscale (Gdk.Pixbuf icon)
-		{
-			Gdk.Pixbuf copy = icon.Copy ();
-			copy.SaturateAndPixelate (copy, 0, false);
-
-			var icon2x = Get2xIconVariant (icon);
-			if (icon2x != null)
-				Set2xIconVariant (copy, MakeGrayscale (icon2x));
-
-			return copy;
-		}
-		
-		public static Gdk.Pixbuf MakeInverted (Gdk.Pixbuf icon)
-		{
-			if (icon.BitsPerSample != 8)
-				throw new NotSupportedException ();
-			Gdk.Pixbuf copy = icon.Copy ();
-			unsafe {
-				byte* pix = (byte*)copy.Pixels;
-				bool hasAlpha = copy.HasAlpha;
-				for (int y = 0; y < copy.Height; y++) {
-					var start = pix;
-					for (int x = 0; x < copy.Width; x++) {
-						pix [0] = (byte)~pix [0];
-						pix [1] = (byte)~pix [1];
-						pix [2] = (byte)~pix [2];
-						pix += hasAlpha ? 4 : 3;
-					}
-					pix = start + copy.Rowstride;
-				}
+			//if an icon name begins with '#', we assume it's a hex colour
+			if (name[0] == '#') {
+				icons [name] = img = CreateColorBlock (name, Gtk.IconSize.Dialog).ToXwtImage ();
+				return img;
 			}
-			
-			var icon2x = Get2xIconVariant (icon);
-			if (icon2x != null)
-				Set2xIconVariant (copy, MakeInverted (icon2x));
 
-			return copy;
-		}
-		
-		public static Gdk.Pixbuf GetPixbuf (string name)
-		{
-			return GetPixbuf (name, Gtk.IconSize.Button);
+			EnsureStockIconIsLoaded (name);
+
+			Gtk.IconSet iconset = Gtk.IconFactory.LookupDefault (name);
+			if (iconset == null && !Gtk.IconTheme.Default.HasIcon (name) && generateDefaultIcon) {
+				LoggingService.LogWarning ("Unknown icon: " + name);
+				return CreateColorIcon ("#FF0000FF");
+			}
+
+			return icons [name] = img = Xwt.Toolkit.CurrentEngine.WrapImage (name);
 		}
 
-		public static Gdk.Pixbuf GetPixbuf (string name, Gtk.IconSize size)
-		{
-			return GetPixbuf (name, size, true);
-		}
-		
-		public static Gdk.Pixbuf GetPixbuf (string name, Gtk.IconSize size, bool generateDefaultIcon)
+		static Gdk.Pixbuf GetPixbuf (string name, Gtk.IconSize size, bool generateDefaultIcon = true)
 		{
 			if (string.IsNullOrEmpty (name)) {
 				LoggingService.LogWarning ("Empty icon requested. Stack Trace: " + Environment.NewLine + Environment.StackTrace);
@@ -290,7 +231,7 @@ namespace MonoDevelop.Ide
 			}
 
 			// If this name refers to an icon defined in an extension point, the images for the icon will now be laoded
-			EnsureStockIconIsLoaded (name, size);
+			EnsureStockIconIsLoaded (name);
 
 			//if an icon name begins with '#', we assume it's a hex colour
 			if (name[0] == '#')
@@ -309,8 +250,7 @@ namespace MonoDevelop.Ide
 				return iconset.RenderIcon (Gtk.Widget.DefaultStyle, Gtk.TextDirection.Ltr, Gtk.StateType.Normal, size, null, null);
 			
 			if (Gtk.IconTheme.Default.HasIcon (stockid)) {
-				int w, h;
-				Gtk.Icon.SizeLookup (size, out w, out h);
+				int h = iconSizes[(int)size].Height;
 				Gdk.Pixbuf result = Gtk.IconTheme.Default.LoadIcon (stockid, h, (Gtk.IconLookupFlags)0);
 				return result;
 			}
@@ -321,35 +261,7 @@ namespace MonoDevelop.Ide
 			return null;
 		}
 		
-		static Dictionary<string,ImageLoader> userIcons = new Dictionary<string, ImageLoader> ();
-		
-		public static ImageLoader GetUserIcon (string email, int size)
-		{
-			string key = email + size;
-			ImageLoader img;
-			if (!userIcons.TryGetValue (key, out img)) {
-				var md5 = System.Security.Cryptography.MD5.Create ();
-				byte[] hash = md5.ComputeHash (Encoding.UTF8.GetBytes (email.Trim ().ToLower ()));
-				StringBuilder sb = new StringBuilder ();
-				foreach (byte b in hash)
-					sb.Append (b.ToString ("x2"));
-				string url = "http://www.gravatar.com/avatar/" + sb.ToString () + "?d=mm&s=" + size;
-				userIcons [key] = img = new ImageLoader (url);
-			}
-			return img;
-		}
-		
-		public static void LoadUserIcon (this Gtk.Image image, string email, int size)
-		{
-			image.WidthRequest = size;
-			image.HeightRequest = size;
-			ImageLoader loader = GetUserIcon (email, size);
-			loader.LoadOperation.Completed += delegate {
-				image.Pixbuf = loader.Pixbuf;
-			};
-		}
-		
-		internal static void EnsureStockIconIsLoaded (string stockId, Gtk.IconSize size)
+		internal static void EnsureStockIconIsLoaded (string stockId)
 		{
 			if (string.IsNullOrEmpty (stockId))
 				return;
@@ -382,6 +294,17 @@ namespace MonoDevelop.Ide
 				}
 				// Icon loaded, it can be removed from the pending icon collection
 				iconStock.Remove (stockId);
+			}
+		}
+
+		static Xwt.Drawing.Image CreateColorIcon (string name)
+		{
+			var color = Xwt.Drawing.Color.FromName (name);
+			using (var ib = new Xwt.Drawing.ImageBuilder (16, 16)) {
+				ib.Context.Rectangle (0, 0, 16, 16);
+				ib.Context.SetColor (color);
+				ib.Context.Fill ();
+				return ib.ToVectorImage ();
 			}
 		}
 
@@ -485,18 +408,6 @@ namespace MonoDevelop.Ide
 			return InternalGetStockIdFromResource (addin, id);
 		}
 		 */
-		
-		[Obsolete ("Easy to misuse and leak memory. Register icon properly, or use pixbuf directly.")]
-		public static string GetStockId (Gdk.Pixbuf pixbuf, Gtk.IconSize size)
-		{
-			string id;
-			if (namedIcons.TryGetValue (pixbuf, out id))
-				return id;
-			id = "__ni_" + namedIcons.Count;
-			namedIcons[pixbuf] = id;
-			AddToIconFactory (id, pixbuf, null, size);
-			return id;
-		}
 
 		public static string GetStockId (string filename)
 		{
@@ -527,7 +438,13 @@ namespace MonoDevelop.Ide
 			Gtk.IconSource source = new Gtk.IconSource ();
 			Gtk.IconSource source2x = null;
 
-			source.Pixbuf = pixbuf;
+			if (Platform.IsWindows) {
+				var pixel_scale = Mono.TextEditor.GtkWorkarounds.GetPixelScale ();
+				source.Pixbuf = pixbuf.ScaleSimple ((int)(pixbuf.Width * pixel_scale), (int)(pixbuf.Height * pixel_scale), Gdk.InterpType.Bilinear);
+			} else {
+				source.Pixbuf = pixbuf;
+			}
+
 			source.Size = iconSize;
 			source.SizeWildcarded = iconSize == Gtk.IconSize.Invalid;
 
@@ -557,7 +474,7 @@ namespace MonoDevelop.Ide
 
 		static string InternalGetStockIdFromResource (RuntimeAddin addin, string id, Gtk.IconSize size)
 		{
-			if (!id.StartsWith ("res:"))
+			if (!id.StartsWith ("res:", StringComparison.Ordinal))
 				return id;
 
 			id = id.Substring (4);
@@ -612,7 +529,7 @@ namespace MonoDevelop.Ide
 			string stockId = "__asm" + addinId + "__" + id + "__" + size;
 			if (!hash.ContainsKey (stockId)) {
 				var aicon = new AnimatedIcon (addin, id, size);
-				AddToIconFactory (stockId, aicon.FirstFrame, null, size);
+				AddToIconFactory (stockId, aicon.FirstFrame.WithSize (size).ToPixbuf (), null, size);
 				AddToAnimatedIconFactory (stockId, aicon);
 				hash[stockId] = stockId;
 			}
@@ -639,9 +556,10 @@ namespace MonoDevelop.Ide
 			foreach (Gtk.IconSize sz in col) {
 				if (sz == Gtk.IconSize.Invalid)
 					continue;
-				Gdk.Pixbuf icon = null;
+				Xwt.Drawing.ImageBuilder ib = null;
+				Xwt.Drawing.Image icon = null;
 				for (int n = 0; n < ids.Length; n++) {
-					Gdk.Pixbuf px = GetPixbuf (ids[n], sz);
+					var px = GetIcon (ids[n], sz);
 					if (px == null) {
 						LoggingService.LogError ("Error creating composed icon {0} at size {1}. Icon {2} is missing.", id, sz, ids[n]);
 						icon = null;
@@ -649,17 +567,19 @@ namespace MonoDevelop.Ide
 					}
 
 					if (n == 0) {
+						ib = new Xwt.Drawing.ImageBuilder (px.Width, px.Height);
+						ib.Context.DrawImage (px, 0, 0);
 						icon = px;
 						continue;
 					}
 
 					if (icon.Width != px.Width || icon.Height != px.Height) 
-						px = ScaleIcon (icon, icon.Width, icon.Height);
+						px = px.WithSize (icon.Width, icon.Height);
 
-					icon = MergeIcons (icon, px);
+					ib.Context.DrawImage (px, 0, 0);
 				}
 				if (icon != null)
-					AddToIconFactory (id, icon, null, sz);
+					AddToIconFactory (id, ib.ToBitmap ().ToPixbuf (), ib.ToBitmap (2f).WithSize (icon.Width * 2, icon.Height * 2).ToPixbuf (), sz);
 			}
 			composedIcons[id] = id;
 			return id;
@@ -695,7 +615,7 @@ namespace MonoDevelop.Ide
 
 		public static bool IsAnimation (string iconId, Gtk.IconSize size)
 		{
-			EnsureStockIconIsLoaded (iconId, size);
+			EnsureStockIconIsLoaded (iconId);
 			string id = GetStockIdForImageSpec (iconId, size);
 			return animationFactory.ContainsKey (id);
 		}
@@ -707,7 +627,7 @@ namespace MonoDevelop.Ide
 
 		public static AnimatedIcon GetAnimatedIcon (string iconId, Gtk.IconSize size)
 		{
-			EnsureStockIconIsLoaded (iconId, size);
+			EnsureStockIconIsLoaded (iconId);
 			string id = GetStockIdForImageSpec (iconId, size);
 
 			AnimatedIcon aicon;
@@ -736,8 +656,8 @@ namespace MonoDevelop.Ide
 			void StartAnimation ()
 			{
 				if (Animation == null) {
-					Animation = AnimatedIcon.StartAnimation (delegate (Gdk.Pixbuf pix) {
-						Image.Pixbuf = pix;
+					Animation = AnimatedIcon.StartAnimation (delegate (Xwt.Drawing.Image pix) {
+						Image.Pixbuf = pix.ToPixbuf ();
 					});
 				}
 			}
@@ -785,18 +705,71 @@ namespace MonoDevelop.Ide
 			if (IsAnimation (iconId, size)) {
 				var anim = GetAnimatedIcon (iconId);
 				ainfo = new AnimatedImageInfo (image, anim);
-				ainfo.Animation = anim.StartAnimation (delegate (Gdk.Pixbuf pix) {
-					image.Pixbuf = pix;
+				ainfo.Animation = anim.StartAnimation (delegate (Xwt.Drawing.Image pix) {
+					image.Pixbuf = pix.ToPixbuf ();
 				});
 				animatedImages.Add (new WeakReference (ainfo));
 			} else
-				image.Pixbuf = GetPixbuf (iconId, size);
+				image.SetFromStock (iconId, size);
 		}
 
 		static void UnregisterImageAnimation (AnimatedImageInfo ainfo)
 		{
 			ainfo.Dispose ();
 			animatedImages.RemoveAll (a => (AnimatedImageInfo)a.Target == ainfo);
+		}
+
+		//TODO: size-limit the in-memory cache
+		//TODO: size-limit the on-disk cache
+		static Dictionary<string,ImageLoader> gravatars = new Dictionary<string,ImageLoader> ();
+
+		public static ImageLoader GetUserIcon (string email, int size, Xwt.Screen screen = null)
+		{
+
+			if (screen == null) {
+				screen = Xwt.Desktop.PrimaryScreen;
+			}
+
+			//only support integer scaling for now
+			var scaleFactor = (int) screen.ScaleFactor;
+			size = size * scaleFactor;
+
+			var hash = GetMD5Hash (email);
+			string key = hash + "@" + size + "x" + size;
+
+			if (scaleFactor != 1) {
+				key += "x" + scaleFactor;
+			}
+
+			ImageLoader loader;
+			if (!gravatars.TryGetValue (key, out loader) || (!loader.Downloading && loader.Image == null)) {
+				var cacheFile = UserProfile.Current.TempDir.Combine ("Gravatars", key);
+				string url = "https://www.gravatar.com/avatar/" + hash + "?d=404&s=" + size;
+				gravatars[key] = loader = new ImageLoader (cacheFile, url, scaleFactor);
+			}
+
+			return loader;
+		}
+
+		static string GetMD5Hash (string email)
+		{
+			var md5 = System.Security.Cryptography.MD5.Create ();
+			byte[] hash = md5.ComputeHash (Encoding.UTF8.GetBytes (email.Trim ().ToLower ()));
+			StringBuilder sb = new StringBuilder ();
+			foreach (byte b in hash)
+				sb.Append (b.ToString ("x2"));
+			return sb.ToString ();
+		}
+
+		public static void LoadUserIcon (this Gtk.Image image, string email, int size)
+		{
+			image.WidthRequest = size;
+			image.HeightRequest = size;
+			ImageLoader gravatar = GetUserIcon (email, size);
+			gravatar.Completed += delegate {
+				if (gravatar.Image != null)
+					image.Pixbuf = gravatar.Image.ToPixbuf ();
+			};
 		}
 	}
 

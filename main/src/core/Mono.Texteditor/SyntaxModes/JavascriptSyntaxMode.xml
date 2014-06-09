@@ -25,6 +25,7 @@
  THE SOFTWARE. -->
  
 <SyntaxMode name = "Javascript" mimeTypes="application/javascript;text/javascript">
+<<<<<<< HEAD
   <EolSpan color = "Comment(Line)" rule="Comment">//</EolSpan>
   <Span color = "Comment(Line)" rule="Comment">
     <Begin>/*</Begin>
@@ -99,4 +100,64 @@
     </Keywords>
   </Rule>
 
+=======
+	<Property name="LineComment">//</Property>
+
+	<EolSpan color = "Script Comment" rule="Comment">//</EolSpan>
+	<Span color = "Script Comment" rule="Comment">
+		<Begin>/*</Begin>
+		<End>*/</End>
+	</Span>
+	
+	<Span color = "Script String" stopateol = "true" escape='\'>
+		<Begin>"</Begin>
+		<End>"</End>
+	</Span>
+
+	<Span color = "Script String" stopateol = "true" escape='\'>
+		<Begin>&apos;</Begin>
+		<End>&apos;</End>
+	</Span>
+	
+	<Match color = "Script Number">CSharpNumber</Match>
+	
+	<Keywords color = "Script Keyword">
+		<Word>this</Word>
+		
+		<Word>new</Word>
+		<Word>typeof</Word>
+		
+		<Word>else</Word>
+		<Word>if</Word>
+		
+		<Word>do</Word>
+		<Word>for</Word>
+		<Word>while</Word>
+
+		<Word>break</Word>
+		<Word>continue</Word>
+		<Word>return</Word>
+		
+		<Word>try</Word>
+		<Word>throw</Word>
+		<Word>catch</Word>
+		<Word>finally</Word>
+
+		<Word>true</Word>
+		<Word>false</Word>
+		<Word>null</Word>
+		
+		<Word>var</Word>
+		<Word>function</Word>
+	</Keywords>
+	
+	<Rule name = "Comment">
+		<Keywords color="Comment Tag" ignorecase="True">
+			<Word>TODO</Word>
+			<Word>FIXME</Word>
+			<Word>HACK</Word>
+			<Word>UNDONE</Word>
+		</Keywords>
+	</Rule>
+>>>>>>> upstream/master
 </SyntaxMode>

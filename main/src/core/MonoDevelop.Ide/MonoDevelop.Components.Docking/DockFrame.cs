@@ -128,13 +128,13 @@ namespace MonoDevelop.Components.Docking
 			OverlayWidgetVisible = true;
 			MinimizeAllAutohidden ();
 			if (animate) {
-				currentOverlayPosition = Allocation.Y + Allocation.Height;
+				currentOverlayPosition = Math.Max (0, Allocation.Y + Allocation.Height);
 				this.Animate (
 					"ShowOverlayWidget", 
 					ShowOverlayWidgetAnimation,
 					easing: Easing.CubicOut);
 			} else {
-				currentOverlayPosition = Allocation.Y;
+				currentOverlayPosition = Math.Max (0, Allocation.Y);
 				QueueResize ();
 			}
 		}
@@ -992,15 +992,6 @@ namespace MonoDevelop.Components.Docking
 				callback (overlayWidget);
 		}
 		
-		protected override void OnRealized ()
-		{
-			base.OnRealized ();
-			HslColor cLight = new HslColor (Style.Background (Gtk.StateType.Normal));
-			HslColor cDark = cLight;
-			cLight.L *= 0.9;
-			cDark.L *= 0.8;
-		}
-
 		protected override bool OnButtonPressEvent (EventButton evnt)
 		{
 			MinimizeAllAutohidden ();

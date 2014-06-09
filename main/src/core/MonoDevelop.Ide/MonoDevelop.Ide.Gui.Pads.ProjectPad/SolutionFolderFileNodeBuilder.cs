@@ -51,13 +51,13 @@ namespace MonoDevelop.Ide.Gui.Pads.ProjectPad
 			return ((SolutionFolderFileNode)dataObject).FileName;
 		}
 		
-		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, ref string label, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon)
+		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, NodeInfo nodeInfo)
 		{
 			SolutionFolderFileNode file = (SolutionFolderFileNode) dataObject;
-			label = file.FileName.FileName;
+			nodeInfo.Label = file.FileName.FileName;
 			if (!System.IO.File.Exists (file.FileName))
-				label = "<span foreground='red'>" + label + "</span>";
-			icon = DesktopService.GetPixbufForFile (file.FileName, Gtk.IconSize.Menu);
+				nodeInfo.Label = "<span foreground='red'>" + nodeInfo.Label + "</span>";
+			nodeInfo.Icon = DesktopService.GetIconForFile (file.FileName, Gtk.IconSize.Menu);
 		}
 		
 		public override object GetParentObject (object dataObject)

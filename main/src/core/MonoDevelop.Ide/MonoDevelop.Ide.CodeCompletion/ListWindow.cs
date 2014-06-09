@@ -691,7 +691,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 		string GetCompletionText (int n);
 		string GetDescription (int n, bool isSelected);
 		string GetRightSideDescription (int n, bool isSelected);
-		Gdk.Pixbuf GetIcon (int n);
+		Xwt.Drawing.Image GetIcon (int n);
 		int CompareTo (int n, int m);
 	}
 }

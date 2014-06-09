@@ -77,10 +77,10 @@ namespace MonoDevelop.Ide.Gui.Components
 		{
 		}
 		
-		public virtual void BuildNode (ITreeBuilder treeBuilder, object dataObject, ref string label, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon)
+		public virtual void BuildNode (ITreeBuilder treeBuilder, object dataObject, NodeInfo nodeInfo)
 		{
 		}
-		
+
 		public virtual void PrepareChildNodes (object dataObject)
 		{
 		}
@@ -150,5 +150,16 @@ namespace MonoDevelop.Ide.Gui.Components
 			
 			return (nodeAttr & attr) != 0;
 		}
+	}
+
+	public class NodeInfo
+	{
+		public string Label { get; set; }
+		public Xwt.Drawing.Image Icon { get; set; }
+		public Xwt.Drawing.Image ClosedIcon { get; set; }
+		public Xwt.Drawing.Image OverlayBottomLeft { get; set; }
+		public Xwt.Drawing.Image OverlayBottomRight { get; set; }
+		public Xwt.Drawing.Image OverlayTopLeft { get; set; }
+		public Xwt.Drawing.Image OverlayTopRight { get; set; }
 	}
 }

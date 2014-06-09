@@ -39,6 +39,7 @@ using MonoDevelop.Core;
 using Mono.Unix;
 using MonoDevelop.Ide.Extensions;
 using MonoDevelop.Core.Execution;
+using MonoDevelop.Components;
 using MonoDevelop.Components.MainToolbar;
 
 
@@ -47,8 +48,11 @@ namespace MonoDevelop.Ide.Desktop
 	public abstract class PlatformService
 	{
 		Hashtable iconHash = new Hashtable ();
+		const bool UsePlatformFileIcons = false;
 		
 		public abstract string DefaultMonospaceFont { get; }
+		public virtual string DefaultSansFont { get { return null; } }
+
 		public abstract string Name { get; }
 
 		/// <summary>
@@ -141,96 +145,98 @@ namespace MonoDevelop.Ide.Desktop
 			}
 		}
 		
-		public Gdk.Pixbuf GetPixbufForFile (string filename, Gtk.IconSize size)
+		public Xwt.Drawing.Image GetIconForFile (string filename)
 		{
-			Gdk.Pixbuf pic = null;
+			Xwt.Drawing.Image pic = null;
 			
-			string icon = GetIconForFile (filename);
+			string icon = GetIconIdForFile (filename);
 			if (icon != null)
-				pic = ImageService.GetPixbuf (icon, size, false);
-			
-			if (pic == null)
-				pic = OnGetPixbufForFile (filename, size);
-			
+				pic = ImageService.GetIcon (icon, false);
+
+			if (pic == null && UsePlatformFileIcons)
+				pic = Xwt.Desktop.GetFileIcon (filename);
+
 			if (pic == null) {
 				string mtype = GetMimeTypeForUri (filename);
 				if (mtype != null) {
 					foreach (string mt in GetMimeTypeInheritanceChain (mtype)) {
-						pic = GetPixbufForType (mt, size);
+						pic = GetIconForType (mt);
 						if (pic != null)
 							return pic;
 					}
 				}
 			}
-			return pic ?? GetDefaultIcon (size);
+			return pic ?? GetDefaultIcon ();
 		}
 		
-		public Gdk.Pixbuf GetPixbufForType (string mimeType, Gtk.IconSize size)
+		public Xwt.Drawing.Image GetIconForType (string mimeType)
 		{
-			Gdk.Pixbuf bf = (Gdk.Pixbuf) iconHash [mimeType+size];
+			Xwt.Drawing.Image bf = (Xwt.Drawing.Image) iconHash [mimeType];
 			if (bf != null)
 				return bf;
 			
 			foreach (string type in GetMimeTypeInheritanceChain (mimeType)) {
 				// Try getting an icon name for the type
-				string icon = GetIconForType (type);
+				string icon = GetIconIdForType (type);
 				if (icon != null) {
-					bf = ImageService.GetPixbuf (icon, size, false);
+					bf = ImageService.GetIcon (icon, false);
 					if (bf != null)
 						break;
 				}
 				
 				// Try getting a pixbuff
-				bf = OnGetPixbufForType (type, size);
-				if (bf != null)
-					break;
+				if (UsePlatformFileIcons) {
+					bf = OnGetIconForType (type);
+					if (bf != null)
+						break;
+				}
 			}
 			
-			if (bf == null) {
-				bf = ImageService.GetPixbuf (mimeType, size, false);
-				if (bf == null)
-					bf = GetDefaultIcon (size);
-			}
-			iconHash [mimeType+size] = bf;
+			if (bf == null)
+				bf = GetDefaultIcon ();
+
+			iconHash [mimeType] = bf;
 			return bf;
 		}
-		
-		Gdk.Pixbuf GetDefaultIcon (Gtk.IconSize size)
+
+		Xwt.Drawing.Image GetDefaultIcon ()
 		{
-			string id = "__default" + size;
-			Gdk.Pixbuf bf = (Gdk.Pixbuf) iconHash [id];
+			string id = "__default";
+			Xwt.Drawing.Image bf = (Xwt.Drawing.Image) iconHash [id];
 			if (bf != null)
 				return bf;
 
-			string icon = DefaultFileIcon;
+			string icon = DefaultFileIconId;
 			if (icon != null)
-				bf = ImageService.GetPixbuf (icon, size, false);
+				bf = ImageService.GetIcon (icon, false);
 			if (bf == null)
-				bf = OnGetDefaultFileIcon (size);
+				bf = DefaultFileIcon;
 			if (bf == null)
-				bf = ImageService.GetPixbuf ("md-regular-file", size, true);
+				bf = ImageService.GetIcon ("md-regular-file", true);
 			iconHash [id] = bf;
 			return bf;
 		}
 		
-		string GetIconForFile (string fileName)
+		string GetIconIdForFile (string fileName)
 		{
 			MimeTypeNode mt = FindMimeTypeForFile (fileName);
 			if (mt != null)
 				return mt.Icon;
 			else
-				return OnGetIconForFile (fileName);
+				return OnGetIconIdForFile (fileName);
 		}
 		
-		string GetIconForType (string type)
+		string GetIconIdForType (string type)
 		{
 			if (type == "text/plain")
 				return "md-text-file-icon";
 			MimeTypeNode mt = FindMimeType (type);
 			if (mt != null)
 				return mt.Icon;
+			else if (UsePlatformFileIcons)
+				return OnGetIconIdForType (type);
 			else
-				return OnGetIconForType (type);
+				return null;
 		}
 
 		static List<MimeTypeNode> mimeTypeNodes = new List<MimeTypeNode> ();
@@ -288,37 +294,42 @@ namespace MonoDevelop.Ide.Desktop
 			return false;
 		}
 		
-		protected virtual string OnGetIconForFile (string filename)
+		protected virtual string OnGetIconIdForFile (string filename)
 		{
 			return null;
 		}
 		
-		protected virtual string OnGetIconForType (string type)
+		protected virtual string OnGetIconIdForType (string type)
 		{
 			return null;
 		}
 		
-		protected virtual Gdk.Pixbuf OnGetPixbufForFile (string filename, Gtk.IconSize size)
+		protected virtual Xwt.Drawing.Image OnGetIconForFile (string filename)
 		{
 			return null;
 		}
 		
-		protected virtual Gdk.Pixbuf OnGetPixbufForType (string type, Gtk.IconSize size)
+		protected virtual Xwt.Drawing.Image OnGetIconForType (string type)
 		{
 			return null;
 		}
 		
-		protected virtual string DefaultFileIcon {
+		protected virtual string DefaultFileIconId {
 			get { return null; }
 		}
 		
-		protected virtual Gdk.Pixbuf OnGetDefaultFileIcon (Gtk.IconSize size)
-		{
-			return null;
+		protected virtual Xwt.Drawing.Image DefaultFileIcon {
+			get { return null; }
 		}
 		
 		public virtual bool SetGlobalMenu (MonoDevelop.Components.Commands.CommandManager commandManager,
 			string commandMenuAddinPath, string appMenuAddinPath)
+		{
+			return false;
+		}
+
+		public virtual bool ShowContextMenu (MonoDevelop.Components.Commands.CommandManager commandManager,
+			Gtk.Widget widget, double x, double y, MonoDevelop.Components.Commands.CommandEntrySet entrySet)
 		{
 			return false;
 		}
@@ -357,18 +368,9 @@ namespace MonoDevelop.Ide.Desktop
 			get { return false; }
 		}
 
-		[Obsolete ("Implement/call OpenTerminal instead")]
-		public virtual void OpenInTerminal (FilePath directory)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public virtual void OpenTerminal (FilePath directory, IDictionary<string, string> environmentVariables, string title)
 		{
-			// use old version as old fallback, it'll throw if it's not implemted either
-			#pragma warning disable 618
-			OpenInTerminal (directory);
-			#pragma warning restore 618
+			throw new InvalidOperationException ();
 		}
 		
 		protected virtual RecentFiles CreateRecentFilesProvider ()

@@ -30,7 +30,9 @@ using Mono.Addins;
 using MonoDevelop.Ide.Desktop;
 using MonoDevelop.Core;
 using System.IO;
+using MonoDevelop.Components;
 using MonoDevelop.Components.MainToolbar;
+using MonoDevelop.Ide.Fonts;
 
 namespace MonoDevelop.Ide
 {
@@ -41,9 +43,8 @@ namespace MonoDevelop.Ide
 
 		static PlatformService PlatformService {
 			get {
-				if (platformService == null) {
-					Initialize ();
-				}
+				if (platformService == null)
+					throw new InvalidOperationException ("Not initialized");
 				return platformService;
 			}
 		}
@@ -70,6 +71,8 @@ namespace MonoDevelop.Ide
 			// Ensure we initialize the native toolkit on the UI thread immediately
 			// so that we can safely access this property later in other threads
 			GC.KeepAlive (NativeToolkit);
+
+			FontService.Initialize ();
 		}
 		
 		/// <summary>
@@ -88,7 +91,8 @@ namespace MonoDevelop.Ide
 		{
 			return PlatformService.GetApplications (filename);
 		}
-		
+
+		[Obsolete ("Use FontService")]
 		public static string DefaultMonospaceFont {
 			get { return PlatformService.DefaultMonospaceFont; }
 		}
@@ -175,14 +179,30 @@ namespace MonoDevelop.Ide
 			return GetMimeTypeInheritanceChain (GetMimeTypeForUri (filename));
 		}
 		
-		public static Gdk.Pixbuf GetPixbufForFile (string filename, Gtk.IconSize size)
+		public static Xwt.Drawing.Image GetIconForFile (string filename)
 		{
-			return PlatformService.GetPixbufForFile (filename, size);
+			return PlatformService.GetIconForFile (filename);
+		}
+
+		public static Xwt.Drawing.Image GetIconForFile (string filename, Gtk.IconSize size)
+		{
+			return PlatformService.GetIconForFile (filename).WithSize (size);
 		}
 		
-		public static Gdk.Pixbuf GetPixbufForType (string mimeType, Gtk.IconSize size)
+		public static Xwt.Drawing.Image GetIconForType (string mimeType)
 		{
-			return PlatformService.GetPixbufForType (mimeType, size);
+			return PlatformService.GetIconForType (mimeType);
+		}
+
+		public static Xwt.Drawing.Image GetIconForType (string mimeType, Gtk.IconSize size)
+		{
+			return PlatformService.GetIconForType (mimeType).WithSize (size);
+		}
+
+		public static bool ShowContextMenu (MonoDevelop.Components.Commands.CommandManager commandManager,
+			Gtk.Widget widget, double x, double y, MonoDevelop.Components.Commands.CommandEntrySet entrySet)
+		{
+			return PlatformService.ShowContextMenu (commandManager, widget, x, y, entrySet);
 		}
 
 		public static bool SetGlobalMenu (MonoDevelop.Components.Commands.CommandManager commandManager,
@@ -212,12 +232,6 @@ namespace MonoDevelop.Ide
 			get {
 				return PlatformService.CanOpenTerminal;
 			}
-		}
-
-		[Obsolete ("Use OpenTerminal")]
-		public static void OpenInTerminal (FilePath directory)
-		{
-			OpenTerminal (directory, null, null);
 		}
 
 		/// <summary>

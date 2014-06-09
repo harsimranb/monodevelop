@@ -35,38 +35,6 @@ using Mono.TextEditor;
 
 namespace MonoDevelop.Components.MainToolbar
 {
-	class LazyImage : IDisposable
-	{
-		string resourceName;
-
-		ImageSurface img;
-		public ImageSurface Img {
-			get {
-				if (img == null)
-					img = CairoExtensions.LoadImage (Assembly.GetCallingAssembly (), resourceName);
-				return img;
-			}
-		}
-
-		public LazyImage (string resourceName)
-		{
-			this.resourceName = resourceName;
-		}
-
-		public static implicit operator ImageSurface(LazyImage lazy)
-		{
-			return lazy.Img;
-		}
-
-		public void Dispose ()
-		{
-			if (img != null) {
-				img.Dispose ();
-				img = null;
-			}
-		}
-	}
-
 	class RoundButton : Gtk.EventBox
 	{
 		const int height = 32;
@@ -77,11 +45,11 @@ namespace MonoDevelop.Components.MainToolbar
 		Cairo.Color fill2Color;
 		Cairo.Color fill3Color;*/
 
-		LazyImage btnNormal/*, btnInactive, btnHover, btnPressed*/;
+		Xwt.Drawing.Image btnNormal/*, btnInactive, btnHover, btnPressed*/;
 
-		LazyImage iconRunNormal, iconRunDisabled;
-		LazyImage iconStopNormal, iconStopDisabled;
-		LazyImage iconBuildNormal, iconBuildDisabled;
+		Xwt.Drawing.Image iconRunNormal, iconRunDisabled;
+		Xwt.Drawing.Image iconStopNormal, iconStopDisabled;
+		Xwt.Drawing.Image iconBuildNormal, iconBuildDisabled;
 
 		public enum OperationIcon {
 			Run,
@@ -96,19 +64,19 @@ namespace MonoDevelop.Components.MainToolbar
 			VisibleWindow = false;
 			SetSizeRequest (height, height);
 
-			btnNormal = new LazyImage ("btExecuteBase-Normal.png");
-//			btnInactive = new LazyImage ("btExecuteBase-Disabled.png");
-			//btnPressed = new LazyImage ("btExecuteBase-Pressed.png");
-//			btnHover = new LazyImage ("btExecuteBase-Hover.png");
+			btnNormal = Xwt.Drawing.Image.FromResource (GetType (), "btn-execute-normal-light-32.png");
+//			btnInactive = new LazyImage ("btn-execute-disabled-light-32.png");
+//			btnPressed = new LazyImage ("btn-execute-pressed-light-32.png");
+//			btnHover = new LazyImage ("btn-execute-hover-light-32.png");
 
-			iconRunNormal = new LazyImage ("icoExecute-Normal.png");
-			iconRunDisabled = new LazyImage ("icoExecute-Disabled.png");
+			iconRunNormal = Xwt.Drawing.Image.FromResource (GetType (), "ico-execute-normal-light-32.png");
+			iconRunDisabled = Xwt.Drawing.Image.FromResource (GetType (), "ico-execute-disabled-light-32.png");
 
-			iconStopNormal = new LazyImage ("icoStop-Normal.png");
-			iconStopDisabled = new LazyImage ("icoStop-Disabled.png");
+			iconStopNormal = Xwt.Drawing.Image.FromResource (GetType (), "ico-stop-normal-light-32.png");
+			iconStopDisabled = Xwt.Drawing.Image.FromResource (GetType (), "ico-stop-disabled-light-32.png");
 
-			iconBuildNormal = new LazyImage ("icoBuild-Normal.png");
-			iconBuildDisabled = new LazyImage ("icoBuild-Disabled.png");
+			iconBuildNormal = Xwt.Drawing.Image.FromResource (GetType (), "ico-build-normal-light-32.png");
+			iconBuildDisabled = Xwt.Drawing.Image.FromResource (GetType (), "ico-build-disabled-light-32.png");
 		}
 
 		StateType hoverState = StateType.Normal;
@@ -153,12 +121,12 @@ namespace MonoDevelop.Components.MainToolbar
 
 		protected override void OnSizeRequested (ref Requisition requisition)
 		{
-			requisition.Width = btnNormal.Img.Width;
-			requisition.Height = btnNormal.Img.Height + 2;
+			requisition.Width = (int) btnNormal.Size.Width;
+			requisition.Height = (int) btnNormal.Size.Height + 2;
 			base.OnSizeRequested (ref requisition);
 		}
 
-		ImageSurface GetIcon()
+		Xwt.Drawing.Image GetIcon()
 		{
 			switch (icon) {
 			case OperationIcon.Stop:
@@ -187,11 +155,7 @@ namespace MonoDevelop.Components.MainToolbar
 			using (var context = Gdk.CairoHelper.Create (evnt.Window)) {
 				DrawBackground (context, Allocation, 15, State);
 				var icon = GetIcon();
-				icon.Show (
-					context,
-					Allocation.X + Math.Max (0, (Allocation.Width - icon.Width) / 2),
-					Allocation.Y + Math.Max (0, (Allocation.Height - icon.Height) / 2)
-				);
+				context.DrawImage (this, icon, Allocation.X + Math.Max (0, (Allocation.Width - icon.Width) / 2), Allocation.Y + Math.Max (0, (Allocation.Height - icon.Height) / 2));
 			}
 			return base.OnExposeEvent (evnt);
 		}

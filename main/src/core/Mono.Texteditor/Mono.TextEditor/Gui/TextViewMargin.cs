@@ -45,8 +45,6 @@ namespace Mono.TextEditor
 		readonly TextEditor textEditor;
 		Pango.TabArray tabArray;
 		Pango.Layout markerLayout, defaultLayout;
-		Pango.Layout eofEolLayout;
-		Pango.Rectangle eofEolLayoutRect;
 		Pango.Layout[] eolMarkerLayout;
 		Pango.Rectangle[] eolMarkerLayoutRect;
 
@@ -436,9 +434,10 @@ namespace Mono.TextEditor
 		}
 
 		static readonly string[] markerTexts = {
+			"<EOF>",
 			"\\n",
-			"\\r",
 			"\\r\\n",
+			"\\r",
 			"<NEL>",
 			"<VT>",
 			"<FF>",
@@ -446,23 +445,27 @@ namespace Mono.TextEditor
 			"<PS>"
 		};
 
-		static int GetEolMarkerIndex (char ch)
+		static int GetEolMarkerIndex (UnicodeNewline ch)
 		{
 			switch (ch) {
-			case NewLine.LF:
+			case UnicodeNewline.Unknown:
 				return 0;
-			case NewLine.CR:
+			case UnicodeNewline.LF:
 				return 1;
-			case NewLine.NEL:
+			case UnicodeNewline.CRLF:
+				return 2;
+			case UnicodeNewline.CR:
 				return 3;
-			case NewLine.VT:
+			case UnicodeNewline.NEL:
 				return 4;
-			case NewLine.FF:
+			case UnicodeNewline.VT:
 				return 5;
-			case NewLine.LS:
+			case UnicodeNewline.FF:
 				return 6;
-			case NewLine.PS:
+			case UnicodeNewline.LS:
 				return 7;
+			case UnicodeNewline.PS:
+				return 8;
 			}
 			return 0;
 		}
@@ -491,11 +494,10 @@ namespace Mono.TextEditor
 			textEditor.LineHeight = System.Math.Max (1, LineHeight);
 
 			if (eolMarkerLayout == null) {
-				eolMarkerLayout = new Pango.Layout[8];
-				eolMarkerLayoutRect = new Pango.Rectangle[8];
+				eolMarkerLayout = new Pango.Layout[markerTexts.Length];
+				eolMarkerLayoutRect = new Pango.Rectangle[markerTexts.Length];
 				for (int i = 0; i < eolMarkerLayout.Length; i++)
 					eolMarkerLayout[i] = PangoUtil.CreateLayout (textEditor);
-				eofEolLayout = PangoUtil.CreateLayout (textEditor);
 			}
 
 			var font = textEditor.Options.Font.Copy ();
@@ -512,11 +514,6 @@ namespace Mono.TextEditor
 				layout.GetPixelExtents (out logRect, out tRect);
 				eolMarkerLayoutRect [i] = tRect;
 			}
-
-
-			eofEolLayout.FontDescription = font;
-			eofEolLayout.SetText ("<EOF>");
-			eofEolLayout.GetPixelExtents (out logRect, out eofEolLayoutRect);
 
 			DecorateLineBg -= DecorateMatchingBracket;
 			if (textEditor.Options.HighlightMatchingBracket && !Document.ReadOnly)
@@ -581,7 +578,6 @@ namespace Mono.TextEditor
 				foreach (var marker in eolMarkerLayout)
 					marker.Dispose ();
 				eolMarkerLayout = null;
-				eofEolLayout.Dispose ();
 			}
 			
 			DisposeLayoutDict ();
@@ -703,10 +699,10 @@ namespace Mono.TextEditor
 				var curRect = new Gdk.Rectangle ((int)caretX, (int)caretY, (int)this.charWidth, (int)LineHeight - 1);
 				if (curRect != caretRectangle) {
 					caretRectangle = curRect;
-					textEditor.TextArea.QueueDrawArea (caretRectangle.X - (int)textEditor.Options.Zoom,
-					               (int)(caretRectangle.Y + (-textEditor.VAdjustment.Value + caretVAdjustmentValue)),
-				                    caretRectangle.Width + (int)textEditor.Options.Zoom,
-					               caretRectangle.Height + 1);
+//					textEditor.TextArea.QueueDrawArea (caretRectangle.X - (int)textEditor.Options.Zoom,
+//					               (int)(caretRectangle.Y + (-textEditor.VAdjustment.Value + caretVAdjustmentValue)),
+//				                    caretRectangle.Width + (int)textEditor.Options.Zoom,
+//					               caretRectangle.Height + 1);
 					caretVAdjustmentValue = textEditor.VAdjustment.Value;
 				}
 
@@ -1582,10 +1578,6 @@ namespace Mono.TextEditor
 				}
 			}
 
-
-			bool drawBg = true;
-			bool drawText = true;
-
 			var metrics  = new LineMetrics {
 				LineSegment = line,
 				Layout = layout,
@@ -1610,15 +1602,6 @@ namespace Mono.TextEditor
 				if (marker.DrawBackground (textEditor, cr, y, metrics)) {
 					isSelectionDrawn |= (marker.Flags & TextLineMarkerFlags.DrawsSelection) == TextLineMarkerFlags.DrawsSelection;
 				}
-
-#pragma warning disable 618
-				var bgMarker = marker as IBackgroundMarker;
-				if (bgMarker != null) {
-					isSelectionDrawn |= (marker.Flags & TextLineMarkerFlags.DrawsSelection) == TextLineMarkerFlags.DrawsSelection;
-					drawText &= bgMarker.DrawBackground (textEditor, cr, metrics.Layout, metrics.SelectionStart, metrics.SelectionEnd, metrics.TextStartOffset, metrics.TextEndOffset, y, metrics.TextRenderStartPosition, metrics.TextRenderEndPosition, ref drawBg);
-					continue;
-				}
-#pragma warning restore 618
 			}
 
 			if (DecorateLineBg != null)
@@ -1852,24 +1835,10 @@ namespace Mono.TextEditor
 
 			Pango.Layout layout;
 			Pango.Rectangle rect;
-			switch (line.DelimiterLength) {
-			case 0:
-				// an emty line end should only happen at eof
-				layout = eofEolLayout;
-				rect = eofEolLayoutRect;
-				break;
-			case 1:
-				var eolIndex = GetEolMarkerIndex (Document.GetCharAt (line.Offset + line.Length));
-				layout = eolMarkerLayout[eolIndex];
-				rect = eolMarkerLayoutRect[eolIndex];
-				break;
-			case 2:
-				layout = eolMarkerLayout[2];
-				rect = eolMarkerLayoutRect[2];
-				break;
-			default:
-				throw new InvalidOperationException (); // other line endings are not known.
-			}
+
+			var index = GetEolMarkerIndex (line.UnicodeNewline);
+			layout = eolMarkerLayout [index];
+			rect = eolMarkerLayoutRect [index];
 			cr.Save ();
 			cr.Translate (x, y + System.Math.Max (0, LineHeight - rect.Height - 1));
 			var col = ColorStyle.PlainText.Foreground;
@@ -2016,7 +1985,7 @@ namespace Mono.TextEditor
 				}
 				mouseSelectionMode = MouseSelectionMode.SingleChar;
 
-				if (textEditor.IsSomethingSelected && textEditor.SelectionRange.Offset <= offset && offset < textEditor.SelectionRange.EndOffset && clickLocation != textEditor.Caret.Location) {
+				if (textEditor.IsSomethingSelected && IsInsideSelection (clickLocation) && clickLocation != textEditor.Caret.Location) {
 					inDrag = true;
 				} else {
 					if ((args.ModifierState & Gdk.ModifierType.ShiftMask) == ModifierType.ShiftMask) {
@@ -2068,6 +2037,19 @@ namespace Mono.TextEditor
 				if (autoScroll)
 					textEditor.Caret.ActivateAutoScrollWithoutMove ();
 			}
+		}
+
+		bool IsInsideSelection (DocumentLocation clickLocation)
+		{
+			var selection = textEditor.MainSelection;
+			if (selection.SelectionMode == SelectionMode.Block) {
+				int minColumn = System.Math.Min (selection.Anchor.Column, selection.Lead.Column);
+				int maxColumn = System.Math.Max (selection.Anchor.Column, selection.Lead.Column);
+
+				return selection.MinLine <= clickLocation.Line && clickLocation.Line <= selection.MaxLine &&
+					minColumn <= clickLocation.Column && clickLocation.Column <= maxColumn;
+			}
+			return selection.Start <= clickLocation && clickLocation < selection.End;
 		}
 
 		protected internal override void MouseReleased (MarginMouseEventArgs args)
@@ -2654,6 +2636,8 @@ namespace Mono.TextEditor
 
 			// Check if line is beyond the document length
 			if (line == null) {
+				DrawScrollShadow (cr, x, y, _lineHeight);
+
 				var marker = Document.GetExtendingTextMarker (lineNr);
 				if (marker != null)
 					marker.Draw (textEditor, cr, lineNr, lineArea);
@@ -2864,17 +2848,22 @@ namespace Mono.TextEditor
 			}
 
 			lastLineRenderWidth = position;
+			DrawScrollShadow (cr, x, y, _lineHeight);
+			if (wrapper != null && wrapper.IsUncached)
+				wrapper.Dispose ();
+		}
+
+		void DrawScrollShadow (Cairo.Context cr, double x, double y, double _lineHeight)
+		{
 			if (textEditor.HAdjustment.Value > 0) {
 				cr.LineWidth = textEditor.Options.Zoom;
 				for (int i = 0; i < verticalShadowAlphaTable.Length; i++) {
-					cr.SetSourceRGBA (0, 0, 0, 1 - verticalShadowAlphaTable[i]);
+					cr.SetSourceRGBA (0, 0, 0, 1 - verticalShadowAlphaTable [i]);
 					cr.MoveTo (x + i * cr.LineWidth + 0.5, y);
 					cr.LineTo (x + i * cr.LineWidth + 0.5, y + 1 + _lineHeight);
 					cr.Stroke ();
 				}
 			}
-			if (wrapper != null && wrapper.IsUncached)
-				wrapper.Dispose ();
 		}
 
 		static double[] verticalShadowAlphaTable = new [] { 0.71, 0.84, 0.95 };

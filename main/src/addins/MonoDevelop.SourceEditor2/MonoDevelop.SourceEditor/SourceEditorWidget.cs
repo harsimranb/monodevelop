@@ -242,16 +242,33 @@ namespace MonoDevelop.SourceEditor
 
 			void FancyFeaturesChanged (object sender, EventArgs e)
 			{
+				if (!QuickTaskStrip.MergeScrollBarAndQuickTasks)
+					return;
 				if (QuickTaskStrip.EnableFancyFeatures) {
 					GtkWorkarounds.SetOverlayScrollbarPolicy (scrolledWindow, PolicyType.Automatic, PolicyType.Never);
+					SetSuppressScrollbar (true);
+				} else {
+					GtkWorkarounds.SetOverlayScrollbarPolicy (scrolledWindow, PolicyType.Automatic, PolicyType.Automatic);
+					SetSuppressScrollbar (false);
+				}
+				QueueResize ();
+			}
+
+			bool suppressScrollbar;
+
+			void SetSuppressScrollbar (bool value)
+			{
+				if (suppressScrollbar == value)
+					return;
+				suppressScrollbar = value;
+
+				if (suppressScrollbar) {
 					scrolledWindow.VScrollbar.SizeRequested += SuppressSize;
 					scrolledWindow.VScrollbar.ExposeEvent += SuppressExpose;
 				} else {
-					GtkWorkarounds.SetOverlayScrollbarPolicy (scrolledWindow, PolicyType.Automatic, PolicyType.Automatic);
 					scrolledWindow.VScrollbar.SizeRequested -= SuppressSize;
 					scrolledWindow.VScrollbar.ExposeEvent -= SuppressExpose;
 				}
-				QueueResize ();
 			}
 
 			[GLib.ConnectBefore]
@@ -294,6 +311,7 @@ namespace MonoDevelop.SourceEditor
 				if (scrolledWindow.Child != null)
 					RemoveEvents ();
 
+				SetSuppressScrollbar (false);
 				QuickTaskStrip.EnableFancyFeatures.Changed -= FancyFeaturesChanged;
 				scrolledWindow.ButtonPressEvent -= PrepareEvent;
 				base.OnDestroyed ();
@@ -1561,8 +1579,6 @@ namespace MonoDevelop.SourceEditor
 			if (marker != null) {
 				marker.IsVisible = !marker.IsVisible;
 				TextEditor.QueueDraw ();
-				MonoDevelop.Ide.Gui.Pads.ErrorListPad pad = IdeApp.Workbench.GetPad<MonoDevelop.Ide.Gui.Pads.ErrorListPad> ().Content as MonoDevelop.Ide.Gui.Pads.ErrorListPad;
-				pad.Control.QueueDraw ();
 			}
 		}
 		

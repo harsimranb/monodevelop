@@ -64,34 +64,34 @@ namespace MonoDevelop.Ide.Gui.Pads.ProjectPad
 			return ((ProjectReference)dataObject).Reference;
 		}
 		
-		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, ref string label, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon)
+		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, NodeInfo nodeInfo)
 		{
 			ProjectReference pref = (ProjectReference) dataObject;
 			
 			switch (pref.ReferenceType) {
-				case ReferenceType.Project:
-					label = pref.Reference;
-					icon = Context.GetIcon ("md-reference-project");
-					break;
-				case ReferenceType.Assembly:
-					label = Path.GetFileName(pref.Reference);
-					icon = Context.GetIcon ("md-reference-folder");
-					break;
-				case ReferenceType.Package:
-					label = pref.Reference.Split(',')[0];
-					icon = Context.GetIcon ("md-reference-package");
-					break;
-				default:
-					label = pref.Reference;
-					icon = Context.GetIcon (Stock.Reference);
-					break;
+			case ReferenceType.Project:
+				nodeInfo.Label = pref.Reference;
+				nodeInfo.Icon = Context.GetIcon ("md-reference-project");
+				break;
+			case ReferenceType.Assembly:
+				nodeInfo.Label = Path.GetFileName(pref.Reference);
+				nodeInfo.Icon = Context.GetIcon ("md-reference-folder");
+				break;
+			case ReferenceType.Package:
+				nodeInfo.Label = pref.Reference.Split(',')[0];
+				nodeInfo.Icon = Context.GetIcon ("md-reference-package");
+				break;
+			default:
+				nodeInfo.Label = pref.Reference;
+				nodeInfo.Icon = Context.GetIcon (Stock.Reference);
+				break;
 			}
 			
-			label = GLib.Markup.EscapeText (label);
+			nodeInfo.Label = GLib.Markup.EscapeText (nodeInfo.Label);
 
 			if (!pref.IsValid) {
-				label = "<span color='red'>" + label + "</span>";
-				icon = Context.GetIcon ("md-reference-warning");
+				nodeInfo.Label = "<span color='red'>" + nodeInfo.Label + "</span>";
+				nodeInfo.Icon = Context.GetIcon ("md-reference-warning");
 			}
 		}
 		
@@ -105,7 +105,7 @@ namespace MonoDevelop.Ide.Gui.Pads.ProjectPad
 		{
 			ProjectReference pref = (ProjectReference) dataObject;
 			if (!pref.IsValid)
-				treeBuilder.AddChild (new TreeViewItem (pref.ValidationErrorMessage, Gtk.Stock.DialogWarning));
+				treeBuilder.AddChild (new TreeViewItem (pref.ValidationErrorMessage, Stock.Warning));
 		}
 		
 		public override void OnNodeAdded (object dataObject)

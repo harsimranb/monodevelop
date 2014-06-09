@@ -56,21 +56,6 @@ namespace MonoDevelop.Components
 			return new Cairo.Rectangle (rect.X, rect.Y, rect.Width, rect.Height);
 		}
 
-		public static Pango.Layout CreateLayout (Gtk.Widget widget, Cairo.Context cairo_context)
-        {
-            Pango.Layout layout = PangoCairoHelper.CreateLayout (cairo_context);
-            layout.FontDescription = widget.PangoContext.FontDescription.Copy ();
-
-            double resolution = widget.Screen.Resolution;
-            if (resolution != -1) {
-                Pango.Context context = PangoCairoHelper.LayoutGetContext (layout);
-                PangoCairoHelper.ContextSetResolution (context, resolution);
-                context.Dispose ();
-            }
-
-            return layout;
-        }
-
         public static Surface CreateSurfaceForPixbuf (Context cr, Pixbuf pixbuf)
         {
 			Surface surface;
@@ -435,16 +420,16 @@ namespace MonoDevelop.Components
 			CAIRO_EXTEND_PAD
 		}
 
-		public static void RenderTiled (this Cairo.Context self, Gdk.Pixbuf source, Gdk.Rectangle area, Gdk.Rectangle clip, double opacity = 1)
+		public static void RenderTiled (this Cairo.Context self, Gtk.Widget target, Xwt.Drawing.Image source, Gdk.Rectangle area, Gdk.Rectangle clip, double opacity = 1)
 		{
-			Gdk.CairoHelper.SetSourcePixbuf (self, source, area.X, area.Y);
-			//NOTE: Mono.Cairo.Context.Pattern returns an object than cannot be safely disposed, so P/Invoke directly
-			var pattern = cairo_get_source (self.Handle);
-			cairo_pattern_set_extend (pattern, CairoExtend.CAIRO_EXTEND_REPEAT);
-			self.Rectangle (clip.ToCairoRect ());
-			self.Clip ();
-			self.PaintWithAlpha (opacity);
-			self.ResetClip ();
+			var ctx = Xwt.Toolkit.CurrentEngine.WrapContext (target, self);
+			ctx.Save ();
+			ctx.Rectangle (clip.X, clip.Y, clip.Width, clip.Height);
+			ctx.Clip ();
+			ctx.Pattern = new Xwt.Drawing.ImagePattern (source);
+			ctx.Rectangle (area.X, area.Y, area.Width, area.Height);
+			ctx.Fill ();
+			ctx.Restore ();
 		}
 
         public static void DisposeContext (Cairo.Context cr)

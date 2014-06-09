@@ -83,8 +83,7 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 			if (expectedType.IsAssignableFrom (typeof(Solution)) && slnFileFormat.CanReadFile (file, this))
 				return true;
 			else if (expectedType.IsAssignableFrom (typeof(SolutionEntityItem))) {
-				ItemTypeNode node = MSBuildProjectService.FindHandlerForFile (file);
-				if (node == null)
+				if (!MSBuildProjectService.CanReadFile (file))
 					return false;
 				//TODO: check ProductVersion first
 				return SupportsToolsVersion (ReadToolsVersion (file));
@@ -161,10 +160,6 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 		public List<FilePath> GetItemFiles (object obj)
 		{
 			return new List<FilePath> ();
-		}
-
-		public void InitializeSolutionItem (SolutionItem item)
-		{
 		}
 
 		public void ConvertToFormat (object obj)
@@ -352,7 +347,7 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 
 		protected override bool SupportsToolsVersion (string version)
 		{
-			return version == "4.0" || version == DefaultToolsVersion;
+			return version == "4.0" || version == "12.0";
 		}
 	}
 }

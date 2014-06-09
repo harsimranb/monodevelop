@@ -1,6 +1,6 @@
 include $(top_srcdir)/xbuild.include
 
-SUBDIRS=UnitTests MacPlatform.Tests UserInterfaceTests
+SUBDIRS=UnitTests MacPlatform.Tests UserInterfaceTests TestRunner Ide.Tests
 
 MONO=mono
 HARNESS=$(top_srcdir)/external/mdtestharness/nunit-console-x86.exe -domain=multiple
@@ -28,6 +28,7 @@ TEST_ASSEMBLIES_COMMON = \
 	$(TEST_DIR)/UnitTests.dll \
 	$(TEST_DIR)/MonoDevelop.Debugger.Tests.dll \
 	$(TEST_DIR)/Mono.TextTemplating.Tests.dll \
+	$(TEST_DIR)/MonoDevelop.PackageManagement.Tests.dll \
 	$(TEST_DIR)/MonoDevelop.TextEditor.Tests.dll \
 	$(TEST_DIR)/MonoDevelop.XmlEditor.Tests.dll \
 	$(EXTERNAL)/nrefactory/bin/Debug/ICSharpCode.NRefactory.Tests.dll

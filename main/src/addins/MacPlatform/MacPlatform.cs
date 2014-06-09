@@ -47,6 +47,7 @@ using MonoDevelop.Ide.Gui;
 using MonoDevelop.Ide.Commands;
 using MonoDevelop.Ide.Desktop;
 using MonoDevelop.MacInterop;
+using MonoDevelop.Components;
 using MonoDevelop.Components.MainToolbar;
 using MonoDevelop.MacIntegration.MacMenu;
 using MonoDevelop.Components.Extensions;
@@ -90,6 +91,7 @@ namespace MonoDevelop.MacIntegration
 			CheckGtkVersion (2, 24, 14);
 
 			Xwt.Toolkit.CurrentEngine.RegisterBackend<IExtendedTitleBarWindowBackend,ExtendedTitleBarWindowBackend> ();
+			Xwt.Toolkit.CurrentEngine.RegisterBackend<IExtendedTitleBarDialogBackend,ExtendedTitleBarDialogBackend> ();
 		}
 
 		static void CheckGtkVersion (uint major, uint minor, uint micro)
@@ -199,6 +201,27 @@ namespace MonoDevelop.MacIntegration
 			}
 			mimeTimer.EndTiming ();
 			return map;
+		}
+
+		public override bool ShowContextMenu (CommandManager commandManager, Gtk.Widget widget, double x, double y, CommandEntrySet entrySet)
+		{
+			var menu = new MDMenu (commandManager, entrySet);
+			var nsview = MacInterop.GtkQuartz.GetView (widget);
+			var toplevel = widget.Toplevel as Gtk.Window;
+			int trans_x, trans_y;
+			widget.TranslateCoordinates (toplevel, (int)x, (int)y, out trans_x, out trans_y);
+
+			var pt = nsview.ConvertPointFromBase (new PointF ((float)trans_x, (float)trans_y));
+
+			var tmp_event = NSEvent.MouseEvent (NSEventType.LeftMouseDown,
+				pt,
+				0, 0,
+				MacInterop.GtkQuartz.GetWindow (toplevel).WindowNumber,
+				null, 0, 0, 0);
+
+			NSMenu.PopUpContextMenu (menu, tmp_event, nsview);
+
+			return true;
 		}
 		
 		public override bool SetGlobalMenu (CommandManager commandManager, string commandMenuAddinPath, string appMenuAddinPath)
@@ -318,12 +341,13 @@ namespace MonoDevelop.MacIntegration
 						e.Handled = true;
 					}
 				};
-				
+
 				ApplicationEvents.OpenDocuments += delegate (object sender, ApplicationDocumentEventArgs e) {
 					//OpenFiles may pump the mainloop, but can't do that from an AppleEvent, so use a brief timeout
 					GLib.Timeout.Add (10, delegate {
-						IdeApp.OpenFiles (e.Documents.Select (doc =>
-							new FileOpenInformation (doc.Key, doc.Value, 1, OpenDocumentOptions.Default)));
+						IdeApp.OpenFiles (e.Documents.Select (
+							doc => new FileOpenInformation (doc.Key, doc.Value, 1, OpenDocumentOptions.DefaultInternal))
+						);
 						return false;
 					});
 					e.Handled = true;
@@ -349,7 +373,7 @@ namespace MonoDevelop.MacIntegration
 									column = 1;
 
 								return new FileOpenInformation (fileUri.AbsolutePath,
-									line, column, OpenDocumentOptions.Default);
+									line, column, OpenDocumentOptions.DefaultInternal);
 							} catch (Exception ex) {
 								LoggingService.LogError ("Invalid TextMate URI: " + url, ex);
 								return null;
@@ -489,11 +513,11 @@ namespace MonoDevelop.MacIntegration
 			return scaled;
 		}
 		
-		protected override Gdk.Pixbuf OnGetPixbufForFile (string filename, Gtk.IconSize size)
+		protected override Xwt.Drawing.Image OnGetIconForFile (string filename)
 		{
 			//this only works on MacOS 10.6.0 and greater
 			if (systemVersion < 0x1060)
-				return base.OnGetPixbufForFile (filename, size);
+				return base.OnGetIconForFile (filename);
 			
 			NSImage icon = null;
 			
@@ -506,7 +530,7 @@ namespace MonoDevelop.MacIntegration
 			}
 			
 			if (icon == null) {
-				return base.OnGetPixbufForFile (filename, size);
+				return base.OnGetIconForFile (filename);
 			}
 			
 			int w, h;
@@ -514,7 +538,8 @@ namespace MonoDevelop.MacIntegration
 				w = h = 22;
 			}
 				
-			return GetPixbufFromNSImage (icon, w, h) ?? base.OnGetPixbufForFile (filename, size);
+			var res = GetPixbufFromNSImage (icon, w, h);
+			return res != null ? res.ToXwtImage () : base.OnGetIconForFile (filename);
 		}
 		
 		public override IProcessAsyncOperation StartConsoleProcess (string command, string arguments, string workingDirectory,

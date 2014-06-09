@@ -49,32 +49,32 @@ namespace MonoDevelop.Ide.Gui.Pads.ProjectPad
 			get { return typeof(UnknownEntryCommandHandler); }
 		}
 		
-		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, ref string label, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon)
+		public override void BuildNode (ITreeBuilder treeBuilder, object dataObject, NodeInfo nodeInfo)
 		{
 			UnknownSolutionItem entry = (UnknownSolutionItem) dataObject;
-
+			
 			if (entry.UnloadedEntry) {
-				icon = Context.GetIcon (MonoDevelop.Ide.Gui.Stock.Project);
-				Gdk.Pixbuf gicon = Context.GetComposedIcon (icon, "fade");
+				nodeInfo.Icon = Context.GetIcon (MonoDevelop.Ide.Gui.Stock.Project);
+				Xwt.Drawing.Image gicon = Context.GetComposedIcon (nodeInfo.Icon, "fade");
 				if (gicon == null) {
-					gicon = ImageService.MakeTransparent (icon, 0.5);
-					Context.CacheComposedIcon (icon, "fade", gicon);
+					gicon = nodeInfo.Icon.WithAlpha (0.5);
+					Context.CacheComposedIcon (nodeInfo.Icon, "fade", gicon);
 				}
-				icon = gicon;
-				label = GettextCatalog.GetString ("<span foreground='grey'>{0} <span size='small'>(Unavailable)</span></span>", GLib.Markup.EscapeText (entry.Name));
+				nodeInfo.Icon = gicon;
+				nodeInfo.Label = GettextCatalog.GetString ("<span foreground='grey'>{0} <span size='small'>(Unavailable)</span></span>", GLib.Markup.EscapeText (entry.Name));
 			}
 			else if (entry.LoadError.Length > 0) {
-				icon = Context.GetIcon (Gtk.Stock.DialogError);
-				label = GettextCatalog.GetString ("{0} <span foreground='red' size='small'>(Load failed)</span>", GLib.Markup.EscapeText (entry.Name));
+				nodeInfo.Icon = Context.GetIcon (Gtk.Stock.DialogError);
+				nodeInfo.Label = GettextCatalog.GetString ("{0} <span foreground='red' size='small'>(Load failed)</span>", GLib.Markup.EscapeText (entry.Name));
 			} else {
-				icon = Context.GetIcon (MonoDevelop.Ide.Gui.Stock.Project);
-				Gdk.Pixbuf gicon = Context.GetComposedIcon (icon, "fade");
+				nodeInfo.Icon = Context.GetIcon (MonoDevelop.Ide.Gui.Stock.Project);
+				var gicon = Context.GetComposedIcon (nodeInfo.Icon, "fade");
 				if (gicon == null) {
-					gicon = ImageService.MakeTransparent (icon, 0.5);
-					Context.CacheComposedIcon (icon, "fade", gicon);
+					gicon = nodeInfo.Icon.WithAlpha (0.5);
+					Context.CacheComposedIcon (nodeInfo.Icon, "fade", gicon);
 				}
-				icon = gicon;
-				label = GLib.Markup.EscapeText (entry.Name);
+				nodeInfo.Icon = gicon;
+				nodeInfo.Label = GLib.Markup.EscapeText (entry.Name);
 			}
 		}
 		
