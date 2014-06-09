@@ -36,7 +36,7 @@ using System.IO;
 using MonoDevelop.Core;
 using MonoDevelop.Projects;
 
-namespace MonoDevelop.JavaScript.Parser
+namespace MonoDevelop.JavaScript
 {
 	class JavaScriptParser : TypeSystemParser
 	{
@@ -48,11 +48,7 @@ namespace MonoDevelop.JavaScript.Parser
 			parseDocument.Flags |= ParsedDocumentFlags.NonSerializable;
 
 			if (project != null) {
-				ProjectFile file = project.Files.GetFile (fileName);
-				if (!file.ExtendedProperties.Contains (ParsedDocumentProperty))
-					file.ExtendedProperties.Add (ParsedDocumentProperty, parseDocument);
-				else
-					file.ExtendedProperties[ParsedDocumentProperty] = parseDocument;
+				JSTypeSystemService.AddUpdateParsedDocument (project.ItemId, fileName, parseDocument);
 			}
 
 			return parseDocument;

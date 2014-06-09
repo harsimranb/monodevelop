@@ -29,10 +29,8 @@ using System.Linq;
 using System.Text;
 using MonoDevelop.Ide.TypeSystem;
 using ICSharpCode.NRefactory.TypeSystem;
-using ICSharpCode.NRefactory;
-using MonoDevelop.JavaScript.Factories;
 
-namespace MonoDevelop.JavaScript.Parser
+namespace MonoDevelop.JavaScript
 {
 	class JavaScriptParsedDocument : ParsedDocument
 	{
@@ -40,7 +38,7 @@ namespace MonoDevelop.JavaScript.Parser
 		#region Variables
 
 		string fileName;
-		System.IO.TextReader content;
+		string content;
 		IList<Error> errors;
 		IList<FoldingRegion> foldings;
 
@@ -68,11 +66,29 @@ namespace MonoDevelop.JavaScript.Parser
 			}
 		}
 
+		public SimpleJSAst SimpleAst {
+			get;
+			private set;
+		}
+
 		#endregion
 
 		#region Constructor
 
 		public JavaScriptParsedDocument (string fileName, System.IO.TextReader content)
+			: base (fileName)
+		{
+			this.fileName = fileName;
+			this.content = content.ReadToEnd ();
+
+			errors = new List<Error> ();
+			foldings = new List<FoldingRegion> ();
+
+			parse ();
+		}
+
+
+		public JavaScriptParsedDocument (string fileName, string content)
 			: base (fileName)
 		{
 			this.fileName = fileName;
@@ -90,14 +106,13 @@ namespace MonoDevelop.JavaScript.Parser
 
 		void parse ()
 		{
-			string fileContent = content.ReadToEnd ();
-
 			var scriptEngine = new Jurassic.ScriptEngine ();
-			var scriptSource = new Jurassic.StringScriptSource (fileContent);
+			var scriptSource = new Jurassic.StringScriptSource (content);
 			var lexar = new Jurassic.Compiler.Lexer (scriptEngine, scriptSource);
 			var scope = scriptEngine.CreateGlobalScope ();
 			var compilerOptions = new Jurassic.Compiler.CompilerOptions ();
 			var parser = new Jurassic.Compiler.Parser (scriptEngine, lexar, scope, compilerOptions, Jurassic.Compiler.CodeContext.Global);
+			SimpleAst = new SimpleJSAst();
 
 			Jurassic.Compiler.Statement parserResult = null;
 			try {
@@ -113,6 +128,7 @@ namespace MonoDevelop.JavaScript.Parser
 				AstNodes = parserResult.ChildNodes;
 				setFoldings (AstNodes);
 				setComments (parser.Comments);
+				SimpleAst = SimpleJSAstFactory.CreateFromJavaScriptParsedDocument (AstNodes);
 			}
 		}
 

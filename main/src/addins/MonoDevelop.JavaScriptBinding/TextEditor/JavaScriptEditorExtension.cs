@@ -34,10 +34,9 @@ using System.Text;
 using MonoDevelop.Core;
 using MonoDevelop.Ide.CodeCompletion;
 using Gtk;
-using MonoDevelop.JavaScript.Parser;
 using MonoDevelop.Projects;
 
-namespace MonoDevelop.JavaScript.TextEditor
+namespace MonoDevelop.JavaScript
 {
 	class JavaScriptEditorExtension : CompletionTextEditorExtension, IOutlinedDocument
 	{
@@ -54,7 +53,7 @@ namespace MonoDevelop.JavaScript.TextEditor
 
 		#region Properties
 
-		public JavaScript.Parser.JavaScriptParsedDocument ParsedDoc { get; private set; }
+		public JavaScriptParsedDocument ParsedDoc { get; private set; }
 
 		#endregion
 
@@ -73,7 +72,7 @@ namespace MonoDevelop.JavaScript.TextEditor
 
 		void HandleDocumentParsed (object sender, EventArgs e)
 		{
-			ParsedDoc = (JavaScript.Parser.JavaScriptParsedDocument)Document.ParsedDocument;
+			ParsedDoc = (JavaScriptParsedDocument)Document.ParsedDocument;
 			if (ParsedDoc != null)
 				refreshOutline ();
 		}
@@ -164,7 +163,7 @@ namespace MonoDevelop.JavaScript.TextEditor
 		#endregion
 
 		#region Completion TextEditor Implementation
-		
+
 		public override string CompletionLanguage { get { return "JavaScript"; } }
 
 		public override bool CanRunCompletionCommand ()
@@ -190,24 +189,13 @@ namespace MonoDevelop.JavaScript.TextEditor
 			if (Ide.IdeApp.ProjectOperations.CurrentSelectedProject == null)
 				return null;
 
-			var documents = new List<JavaScriptParsedDocument> ();
-			foreach (var file in Ide.IdeApp.ProjectOperations.CurrentSelectedProject.Files) {
-				if (!file.Name.ToUpper ().EndsWith (".JS"))
-					continue;
-
-				var parsedDoc = file.ExtendedProperties[JavaScriptParser.ParsedDocumentProperty] as JavaScriptParsedDocument;
-				if (parsedDoc == null ||
-				    !parsedDoc.IsInvalid) {
-					// TODO: Trigger parsing
-				}
-
-				documents.Add (parsedDoc);
-			}
+			List<SimpleJSAst> parsedDocuments = JSTypeSystemService.GetAllJSAstsForProject (Ide.IdeApp.ProjectOperations.CurrentSelectedProject.ItemId);
 
 			// TODO: Find the current scope.
 			var dataList = new CompletionDataList ();
-			foreach (JavaScriptParsedDocument parsedDocument in documents) {
-				dataList.AddRange (buildCodeCompletionList (parsedDocument.AstNodes));
+			foreach (SimpleJSAst parsedDocumentAstNodes in parsedDocuments) {
+				if (parsedDocumentAstNodes != null)
+					dataList.AddRange (buildCodeCompletionList (parsedDocumentAstNodes.AstNodes));
 			}
 			return dataList;
 		}
@@ -226,12 +214,10 @@ namespace MonoDevelop.JavaScript.TextEditor
 			var pixRenderer = (CellRendererPixbuf)cell;
 			object o = model.GetValue (iter, 0);
 
-			if (o is Jurassic.Compiler.FunctionStatement || o is Jurassic.Compiler.FunctionExpression) {
+			if (o is JSFunctionStatement) {
 				pixRenderer.Pixbuf = ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.Method, IconSize.Menu);
-			} else if (o is Jurassic.Compiler.VariableDeclaration) {
+			} else if (o is JSVariableDeclaration) {
 				pixRenderer.Pixbuf = ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.Field, IconSize.Menu);
-			} else if (o is JavaScript.Parser.JavaScriptParsedDocument) {
-				pixRenderer.Pixbuf = ImageService.GetPixbuf (MonoDevelop.Ide.Gui.Stock.FileXmlIcon, IconSize.Menu);
 			} else {
 				throw new ArgumentException (string.Format ("Type {0} is not supported in JavaScript Outline.", o.GetType ().Name));
 			}
@@ -242,27 +228,15 @@ namespace MonoDevelop.JavaScript.TextEditor
 			var txtRenderer = (CellRendererText)cell;
 			object o = model.GetValue (iter, 0);
 
-			var functionExpression = o as Jurassic.Compiler.FunctionExpression;
-			if (functionExpression != null) {
-				txtRenderer.Text = functionExpression.BuildFunctionSignature ();
-				return;
-			} 
-
-			var functionStatement = o as Jurassic.Compiler.FunctionStatement;
+			var functionStatement = o as JSFunctionStatement;
 			if (functionStatement != null) {
-				txtRenderer.Text = functionStatement.BuildFunctionSignature ();
+				txtRenderer.Text = functionStatement.FunctionSignature;
 				return;
 			} 
 
-			var varDeclaration = o as Jurassic.Compiler.VariableDeclaration;
+			var varDeclaration = o as JSVariableDeclaration;
 			if (varDeclaration != null) {
-				txtRenderer.Text = varDeclaration.VariableName;
-				return;
-			}
-
-			var document = o as JavaScript.Parser.JavaScriptParsedDocument;
-			if (document != null) {
-				txtRenderer.Text = System.IO.Path.GetFileName (document.FileName);
+				txtRenderer.Text = varDeclaration.Name;
 				return;
 			}
 
@@ -304,47 +278,39 @@ namespace MonoDevelop.JavaScript.TextEditor
 			Gdk.Threads.Leave ();
 		}
 
-		void refillOutlineStore (JavaScript.Parser.JavaScriptParsedDocument doc, Gtk.TreeStore store)
+		void refillOutlineStore (JavaScriptParsedDocument doc, Gtk.TreeStore store)
 		{
 			if (doc == null)
 				return;
 
-			var parentIter = store.AppendValues (doc);
-			buildTreeChildren (store, parentIter, doc.AstNodes);
+			buildTreeChildren (store, Gtk.TreeIter.Zero, doc.SimpleAst.AstNodes);
 		}
 
-		void buildTreeChildren (Gtk.TreeStore store, Gtk.TreeIter parent, IEnumerable<Jurassic.Compiler.JSAstNode> nodes)
+		void buildTreeChildren (Gtk.TreeStore store, Gtk.TreeIter parent, IEnumerable<JSStatement> nodes)
 		{
 			if (nodes == null)
 				return;
 
-			foreach (Jurassic.Compiler.JSAstNode node in nodes) {
+			foreach (JSStatement node in nodes) {
 				Gtk.TreeIter childIter = default (Gtk.TreeIter);
-				var variableStatement = node as Jurassic.Compiler.VarStatement;
-				if (variableStatement != null) {
-					foreach (Jurassic.Compiler.VariableDeclaration variableDeclaration in variableStatement.Declarations) {
-						childIter = store.AppendValues (parent, variableDeclaration);
-					}
-
-					buildTreeChildren (store, childIter, node.ChildNodes);
-
+				var variableDeclaration = node as JSVariableDeclaration;
+				if (variableDeclaration != null) {
+					if (!parent.Equals (Gtk.TreeIter.Zero))
+						store.AppendValues (parent, variableDeclaration);
+					else
+						store.AppendValues (variableDeclaration);
 					continue;
 				}
 
-				var functionStatement = node as Jurassic.Compiler.FunctionStatement;
+				var functionStatement = node as JSFunctionStatement;
 				if (functionStatement != null) {
-					childIter = store.AppendValues (parent, functionStatement);
-					buildTreeChildren (store, childIter, functionStatement.BodyRoot.ChildNodes);
+					if (!parent.Equals (Gtk.TreeIter.Zero))
+						childIter = store.AppendValues (parent, functionStatement);
+					else
+						childIter = store.AppendValues (functionStatement);
+					buildTreeChildren (store, childIter, functionStatement.ChildNodes);
 					continue;
 				}
-
-				var functionExpression = node as Jurassic.Compiler.FunctionExpression;
-				if (functionExpression != null) {
-					childIter = store.AppendValues (parent, functionExpression);
-					buildTreeChildren (store, childIter, functionExpression.BodyRoot.ChildNodes);
-					continue;
-				}
-
 
 				buildTreeChildren (store, parent, node.ChildNodes);
 			}
@@ -354,18 +320,9 @@ namespace MonoDevelop.JavaScript.TextEditor
 		{
 			int line = 0, column = 0;
 
-			if (node is Jurassic.Compiler.VariableDeclaration) {
-				line = (node as Jurassic.Compiler.VariableDeclaration).SourceSpan.StartLine;
-				column = (node as Jurassic.Compiler.VariableDeclaration).SourceSpan.StartColumn;
-			} else if (node is Jurassic.Compiler.FunctionStatement) {
-				line = (node as Jurassic.Compiler.FunctionStatement).SourceSpan.StartLine;
-				column = (node as Jurassic.Compiler.FunctionStatement).SourceSpan.StartColumn;
-			} else if (node is Jurassic.Compiler.FunctionExpression) {
-				line = (node as Jurassic.Compiler.FunctionExpression).SourceSpan.StartLine;
-				column = (node as Jurassic.Compiler.FunctionExpression).SourceSpan.StartColumn;
-			} else if (node is JavaScript.Parser.JavaScriptParsedDocument) {
-				line = 0;
-				column = 0;
+			if (node is JSStatement) {
+				line = (node as JSStatement).SourceCodePosition.StartLine;
+				column = (node as JSStatement).SourceCodePosition.StartColumn;
 			} else {
 				return;
 			}
@@ -377,7 +334,7 @@ namespace MonoDevelop.JavaScript.TextEditor
 			}
 		}
 
-		CompletionDataList buildCodeCompletionList (IEnumerable<Jurassic.Compiler.JSAstNode> nodes)
+		CompletionDataList buildCodeCompletionList (IEnumerable<JSStatement> nodes)
 		{
 			// TODO: Store all functions, variables in project, similar C Binding
 			if (nodes == null)
@@ -385,27 +342,18 @@ namespace MonoDevelop.JavaScript.TextEditor
 
 			var completionList = new CompletionDataList ();
 
-			foreach (Jurassic.Compiler.JSAstNode node in nodes) {
-				var variableStatement = node as Jurassic.Compiler.VarStatement;
-				if (variableStatement != null) {
-					foreach (Jurassic.Compiler.VariableDeclaration variableDeclaration in variableStatement.Declarations) {
-						completionList.Add (new CompletionData (variableDeclaration));
-					}
-					completionList.AddRange (buildCodeCompletionList (variableStatement.ChildNodes));
+			foreach (JSStatement node in nodes) {
+				var variableDeclaration = node as JSVariableDeclaration;
+				if (variableDeclaration != null) {
+					completionList.Add (new CompletionData (variableDeclaration));
+					completionList.AddRange (buildCodeCompletionList (variableDeclaration.ChildNodes));
 					continue;
 				}
 
-				var functionStatement = node as Jurassic.Compiler.FunctionStatement;
+				var functionStatement = node as JSFunctionStatement;
 				if (functionStatement != null) {
 					completionList.Add (new CompletionData (functionStatement));
-					completionList.AddRange (buildCodeCompletionList (functionStatement.BodyRoot.ChildNodes));
-					continue;
-				}
-
-				var functionExpression = node as Jurassic.Compiler.FunctionExpression;
-				if (functionExpression != null) {
-					completionList.Add (new CompletionData (functionExpression));
-					completionList.AddRange (buildCodeCompletionList (functionExpression.BodyRoot.ChildNodes));
+					completionList.AddRange (buildCodeCompletionList (functionStatement.ChildNodes));
 					continue;
 				}
 

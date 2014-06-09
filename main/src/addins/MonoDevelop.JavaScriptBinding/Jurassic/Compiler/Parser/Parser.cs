@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using ICSharpCode.NRefactory.TypeSystem;
-using MonoDevelop.Core;
-using MonoDevelop.JavaScript.Factories;
 
 namespace Jurassic.Compiler
 {
@@ -1799,6 +1797,10 @@ namespace Jurassic.Compiler
 						if (StrictMode)
 							throw new JavaScriptException (engine, "SyntaxError", string.Format ("The property '{0}' already has a value", propertyName), LineNumber, SourcePath);
 					}
+
+					var functionExpression = propertyValue as FunctionExpression;
+					if (functionExpression != null)
+						functionExpression.FunctionName = propertyName;
 
 					// Add the property setter to the list.
 					properties [propertyName] = propertyValue;

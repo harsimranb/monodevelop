@@ -1,5 +1,5 @@
 ﻿//
-// DomRegionFactory.cs
+// JavaScriptDocumentCache.cs
 //
 // Author:
 //       Harsimran Bath <harsimranbath@gmail.com>
@@ -22,32 +22,28 @@
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE
-using ICSharpCode.NRefactory;
-using ICSharpCode.NRefactory.TypeSystem;
+// THE SOFTWARE.
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using MonoDevelop.JavaScript.Parser;
 
 namespace MonoDevelop.JavaScript
 {
-	static class DomRegionFactory
+	class JavaScriptDocumentCache
 	{
-		public static DomRegion CreateDomRegion (string filename, Jurassic.Compiler.SourceCodeSpan position)
-		{
-			return CreateDomRegion (filename, position.StartLine, position.StartColumn, position.EndLine, position.EndColumn);
+		public string ProjectId {
+			get;
+			set;
 		}
 
-		public static DomRegion CreateDomRegion (string filename, int startLine, int startColumn, int endLine, int endColumn)
-		{
-			var region = new DomRegion (filename,
-				             startLine,
-				             startColumn,
-				             endLine,
-				             endColumn);
+		public string FileName {
+			get;
+			set;
+		}
 
-			return region;
+		public JavaScriptParsedDocument ParsedDocument {
+			get;
+			set;
 		}
 	}
 }
+
