@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using MonoDevelop.Core;
@@ -25,7 +26,7 @@ namespace MonoDevelop.VersionControl
 				|| typeof(ProjectFolder).IsAssignableFrom (dataType)
 				|| typeof(IWorkspaceObject).IsAssignableFrom (dataType);
 		}
-
+		
 		protected override void Initialize ()
 		{
 			base.Initialize ();
@@ -38,7 +39,7 @@ namespace MonoDevelop.VersionControl
 			base.Dispose ();
 		}
 
-		public override void BuildNode (ITreeBuilder builder, object dataObject, ref string label, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon)
+		public override void BuildNode (ITreeBuilder builder, object dataObject, NodeInfo nodeInfo)
 		{
 			if (!builder.Options["ShowVersionControlOverlays"])
 				return;
@@ -50,7 +51,7 @@ namespace MonoDevelop.VersionControl
 				Repository rep = VersionControlService.GetRepository (ce);
 				if (rep != null) {
 					rep.GetDirectoryVersionInfo (ce.BaseDirectory, false, false);
-					AddFolderOverlay (rep, ce.BaseDirectory, ref icon, ref closedIcon, false);
+					AddFolderOverlay (rep, ce.BaseDirectory, nodeInfo, false);
 				}
 				return;
 			} else if (dataObject is ProjectFolder) {
@@ -59,7 +60,7 @@ namespace MonoDevelop.VersionControl
 					Repository rep = VersionControlService.GetRepository (ce.ParentWorkspaceObject);
 					if (rep != null) {
 						rep.GetDirectoryVersionInfo (ce.Path, false, false);
-						AddFolderOverlay (rep, ce.Path, ref icon, ref closedIcon, true);
+						AddFolderOverlay (rep, ce.Path, nodeInfo, true);
 					}
 				}
 				return;
@@ -87,9 +88,7 @@ namespace MonoDevelop.VersionControl
 			
 			VersionInfo vi = repo.GetVersionInfo (file);
 
-			Gdk.Pixbuf overlay = VersionControlService.LoadOverlayIconForStatus (vi.Status);
-			if (overlay != null)
-				AddOverlay (ref icon, overlay);
+			nodeInfo.OverlayBottomRight = VersionControlService.LoadOverlayIconForStatus (vi.Status);
 		}
 
 /*		public override void PrepareChildNodes (object dataObject)
@@ -110,9 +109,9 @@ namespace MonoDevelop.VersionControl
 			base.PrepareChildNodes (dataObject);
 		}
 */		
-		void AddFolderOverlay (Repository rep, string folder, ref Gdk.Pixbuf icon, ref Gdk.Pixbuf closedIcon, bool skipVersionedOverlay)
+		static void AddFolderOverlay (Repository rep, string folder, NodeInfo nodeInfo, bool skipVersionedOverlay)
 		{
-			Gdk.Pixbuf overlay = null;
+			Xwt.Drawing.Image overlay = null;
 			VersionInfo vinfo = rep.GetVersionInfo (folder);
 			if (vinfo == null || !vinfo.IsVersioned) {
 				overlay = VersionControlService.LoadOverlayIconForStatus (VersionStatus.Unversioned);
@@ -122,36 +121,7 @@ namespace MonoDevelop.VersionControl
 			} else {
 				overlay = VersionControlService.LoadOverlayIconForStatus (vinfo.Status);
 			}
-			if (overlay != null) {
-				AddOverlay (ref icon, overlay);
-				if (closedIcon != null)
-					AddOverlay (ref closedIcon, overlay);
-			}
-		}
-		
-		void AddOverlay (ref Gdk.Pixbuf icon, Gdk.Pixbuf overlay)
-		{
-			Gdk.Pixbuf cached = Context.GetComposedIcon (icon, overlay);
-			if (cached != null) {
-				icon = cached;
-				return;
-			}
-			
-			int dx = 2;
-			int dy = 2;
-			
-			Gdk.Pixbuf res = new Gdk.Pixbuf (icon.Colorspace, icon.HasAlpha, icon.BitsPerSample, icon.Width + dx, icon.Height + dy);
-			res.Fill (0);
-			icon.CopyArea (0, 0, icon.Width, icon.Height, res, 0, 0);
-			
-			overlay.Composite (res,
-				res.Width - overlay.Width,  res.Height - overlay.Height,
-				overlay.Width, overlay.Height,
-				res.Width - overlay.Width,  res.Height - overlay.Height,
-				1, 1, Gdk.InterpType.Bilinear, 255); 
-			
-			Context.CacheComposedIcon (icon, overlay, res);
-			icon = res;
+			nodeInfo.OverlayBottomRight = overlay;
 		}
 		
 		void Monitor (object sender, FileUpdateEventArgs args)

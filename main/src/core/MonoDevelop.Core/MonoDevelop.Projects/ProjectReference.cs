@@ -45,8 +45,8 @@ namespace MonoDevelop.Projects
 		Project,
 		Package,
 		Custom,
-		[Obsolete]
-		Gac
+		[Obsolete ("Use Package")]
+		Gac = Package
 	}
 	
 	/// <summary>
@@ -73,6 +73,7 @@ namespace MonoDevelop.Projects
 		string package;
 		SystemPackage cachedPackage;
 		string customError;
+		string hintPath;
 		
 		public event EventHandler StatusChanged;
 		
@@ -100,16 +101,23 @@ namespace MonoDevelop.Projects
 			UpdatePackageReference ();
 		}
 		
-		public ProjectReference (ReferenceType referenceType, string reference)
+		public ProjectReference (ReferenceType referenceType, string reference): this (referenceType, reference, null)
 		{
-			if (referenceType == ReferenceType.Assembly)
+		}
+
+		public ProjectReference (ReferenceType referenceType, string reference, string hintPath)
+		{
+			if (referenceType == ReferenceType.Assembly) {
 				specificVersion = false;
-#pragma warning disable 612
-			if (referenceType == ReferenceType.Gac)
-				referenceType = ReferenceType.Package;
-#pragma warning restore 612
+				if (hintPath == null) {
+					hintPath = reference;
+					reference = Path.GetFileNameWithoutExtension (reference);
+				}
+			}
+
 			this.referenceType = referenceType;
-			this.reference     = reference;
+			this.reference = reference;
+			this.hintPath = hintPath;
 			UpdatePackageReference ();
 		}
 		
@@ -151,9 +159,7 @@ namespace MonoDevelop.Projects
 		// This property is used by the serializer. It ensures that the obsolete Gac value is not serialized
 		internal ReferenceType internalReferenceType {
 			get { return referenceType; }
-			#pragma warning disable 612
-			set { referenceType = value == ReferenceType.Gac ? ReferenceType.Package : value; }
-			#pragma warning restore 612
+			set { referenceType = value; }
 		}
 
 		public ReferenceType ReferenceType {
@@ -207,12 +213,6 @@ namespace MonoDevelop.Projects
 		public bool CanSetLocalCopy {
 			get {
 				return true;
-			}
-		}
-
-		internal string LoadedReference {
-			get {
-				return loadedReference;
 			}
 		}
 
@@ -283,7 +283,7 @@ namespace MonoDevelop.Projects
 						}
 					}
 				} else if (ReferenceType == ReferenceType.Assembly) {
-					if (!File.Exists (reference))
+					if (!File.Exists (hintPath))
 						return GettextCatalog.GetString ("File not found");
 				}
 				return string.Empty;
@@ -306,6 +306,10 @@ namespace MonoDevelop.Projects
 				return true;
 			}
 		}
+
+		public string HintPath {
+			get { return hintPath; }
+		}
 		
 		string GetVersionNum (string asmName)
 		{
@@ -321,6 +325,26 @@ namespace MonoDevelop.Projects
 			}
 			return "0.0.0.0";
 		}
+
+		internal ProjectReference GetRefreshedReference ()
+		{
+			if (customError != null)
+				return null;
+			if (ReferenceType == ReferenceType.Package) {
+				if (!string.IsNullOrEmpty (hintPath) && File.Exists (hintPath)) {
+					var res = (ProjectReference) MemberwiseClone ();
+					res.referenceType = ReferenceType.Assembly;
+					return res;
+				}
+			} else if (ReferenceType == ReferenceType.Assembly) {
+				if (!string.IsNullOrEmpty (hintPath) && !File.Exists (hintPath)) {
+					var res = (ProjectReference) MemberwiseClone ();
+					res.referenceType = ReferenceType.Package;
+					return res;
+				}
+			}
+			return null;
+		}
 		
 		/// <summary>
 		/// Returns the file name to an assembly, regardless of what 
@@ -330,7 +354,7 @@ namespace MonoDevelop.Projects
 		{
 			switch (ReferenceType) {
 				case ReferenceType.Assembly:
-					return reference;
+					return hintPath;
 				
 				case ReferenceType.Package:
 					string file = AssemblyContext.GetAssemblyLocation (Reference, package, ownerProject != null? ownerProject.TargetFramework : null);
@@ -511,6 +535,22 @@ namespace MonoDevelop.Projects
 		{
 			if (StatusChanged != null)
 				StatusChanged (this, EventArgs.Empty);
+		}
+
+		/// <summary>
+		/// Resolves a project for a ReferenceType.Project reference type in a given solution.
+		/// </summary>
+		/// <returns>The project, or <c>null</c> if it couldn't be resolved.</returns>
+		/// <param name="inSolution">The solution the project is in.</param>
+		/// <exception cref="T:System.ArgumentNullException">Thrown if inSolution == null</exception>
+		/// <exception cref="T:System.InvalidOperationException">Thrown if ReferenceType != ReferenceType.Project</exception>
+		public Project ResolveProject (Solution inSolution)
+		{
+			if (inSolution == null)
+				throw new ArgumentNullException ("inSolution");
+			if (ReferenceType != ReferenceType.Project)
+				throw new InvalidOperationException ("ResolveProject is only definied for Project reference type.");
+			return inSolution.FindProjectByName (Reference);
 		}
 	}
 	

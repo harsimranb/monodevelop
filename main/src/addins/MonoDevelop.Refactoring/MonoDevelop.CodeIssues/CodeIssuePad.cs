@@ -86,11 +86,11 @@ namespace MonoDevelop.CodeIssues
 		public CodeIssuePadControl ()
 		{
 			var buttonRow = new HBox();
-			runButton.Image = GetStockImage(Gtk.Stock.Execute);
+			runButton.Image = ImageService.GetIcon (Ide.Gui.Stock.Execute, IconSize.Menu);
 			runButton.Clicked += StartAnalyzation;
 			buttonRow.PackStart (runButton);
 
-			cancelButton.Image = GetStockImage(Gtk.Stock.Stop);
+			cancelButton.Image = ImageService.GetIcon (Ide.Gui.Stock.Stop, IconSize.Menu);
 			cancelButton.Clicked += StopAnalyzation;
 			cancelButton.Sensitive = false;
 			buttonRow.PackStart (cancelButton);
@@ -131,12 +131,6 @@ namespace MonoDevelop.CodeIssues
 
 			IdeApp.Workspace.LastWorkspaceItemClosed += HandleLastWorkspaceItemClosed;
 		}
-
-	    private static Image GetStockImage (string name)
-	    {
-            // HACK: Assume we are running with the GTK backend, which supports the pixbuf type
-	        return Toolkit.CurrentEngine.WrapImage (ImageService.GetPixbuf (name, IconSize.SmallToolbar));
-	    }
 
 	    void HandleLastWorkspaceItemClosed (object sender, EventArgs e)
 		{

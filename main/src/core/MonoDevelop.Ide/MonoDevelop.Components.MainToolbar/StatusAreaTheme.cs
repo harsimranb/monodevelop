@@ -58,7 +58,7 @@ namespace MonoDevelop.Components.MainToolbar
 				errorSurface.Dispose ();
 		}
 
-		public void Render (Cairo.Context context, StatusArea.RenderArg arg)
+		public void Render (Cairo.Context context, StatusArea.RenderArg arg, Gtk.Widget widget)
 		{
 			context.CachedDraw (surface: ref backgroundSurface, 
 			                    region: arg.Allocation,
@@ -105,11 +105,10 @@ namespace MonoDevelop.Components.MainToolbar
 			int progress_bar_width = arg.ChildAllocation.Width;
 
 			if (arg.CurrentPixbuf != null) {
-				int y = arg.Allocation.Y + (arg.Allocation.Height - arg.CurrentPixbuf.Height) / 2;
-				Gdk.CairoHelper.SetSourcePixbuf (context, arg.CurrentPixbuf, arg.ChildAllocation.X, y);
-				context.Paint ();
-				progress_bar_x += arg.CurrentPixbuf.Width + Styles.ProgressBarOuterPadding;
-				progress_bar_width -= arg.CurrentPixbuf.Width + Styles.ProgressBarOuterPadding;
+				int y = arg.Allocation.Y + (arg.Allocation.Height - (int)arg.CurrentPixbuf.Size.Height) / 2;
+				context.DrawImage (widget, arg.CurrentPixbuf, arg.ChildAllocation.X, y);
+				progress_bar_x += (int)arg.CurrentPixbuf.Width + Styles.ProgressBarOuterPadding;
+				progress_bar_width -= (int)arg.CurrentPixbuf.Width + Styles.ProgressBarOuterPadding;
 			}
 
 			int center = arg.Allocation.Y + arg.Allocation.Height / 2;
@@ -301,10 +300,10 @@ namespace MonoDevelop.Components.MainToolbar
 
 		void DrawProgressBar (Cairo.Context context, double progress, Gdk.Rectangle bounding, StatusArea.RenderArg arg)
 		{
-			LayoutRoundedRectangle (context, new Gdk.Rectangle (bounding.X, bounding.Y, (int) (bounding.Width * progress), bounding.Height));
+			LayoutRoundedRectangle (context, new Gdk.Rectangle (bounding.X, bounding.Y, (int) (bounding.Width * progress), bounding.Height), 0, 0, 1);
 			context.Clip ();
 
-			LayoutRoundedRectangle (context, bounding);
+			LayoutRoundedRectangle (context, bounding, 0, 0, 1);
 			context.SetSourceColor (Styles.WithAlpha (Styles.StatusBarProgressBackgroundColor, Styles.StatusBarProgressBackgroundColor.A * arg.ProgressBarAlpha));
 			context.FillPreserve ();
 

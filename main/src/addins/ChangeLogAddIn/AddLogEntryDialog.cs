@@ -30,6 +30,8 @@ using System.IO;
 using System.Collections.Generic;
 using Gtk;
 using MonoDevelop.Ide;
+using MonoDevelop.Components;
+using MonoDevelop.Ide.Fonts;
 
 namespace MonoDevelop.ChangeLogAddIn
 {
@@ -45,8 +47,7 @@ namespace MonoDevelop.ChangeLogAddIn
 		{
 			Build ();
 			
-			Pango.FontDescription font = Pango.FontDescription.FromString (DesktopService.DefaultMonospaceFont);
-			textview.ModifyFont (font);
+			textview.ModifyFont (FontService.MonospaceFont);
 			textview.WrapMode = WrapMode.None;
 			textview.AcceptsTab = true;
 			Pango.TabArray tabs = new Pango.TabArray (1, true);
@@ -55,20 +56,19 @@ namespace MonoDevelop.ChangeLogAddIn
 			textview.SizeRequested += delegate {
 				textview.WidthRequest = GetStringWidth (String.Empty.PadRight (80));
 			};
-			font.Dispose ();
 			
-			store = new ListStore (typeof(ChangeLogEntry), typeof(Gdk.Pixbuf), typeof(string));
+			store = new ListStore (typeof(ChangeLogEntry), typeof(Xwt.Drawing.Image), typeof(string));
 			fileList.Model = store;
 			
-			fileList.AppendColumn (string.Empty, new CellRendererPixbuf (), "pixbuf", 1);
+			fileList.AppendColumn (string.Empty, new CellRendererImage (), "image", 1);
 			fileList.AppendColumn (string.Empty, new CellRendererText (), "text", 2);
 			
 			foreach (ChangeLogEntry ce in entries.Values) {
-				Gdk.Pixbuf pic;
+				Xwt.Drawing.Image pic;
 				if (ce.CantGenerate)
-					pic = ImageService.GetPixbuf (Stock.DialogWarning, IconSize.Menu);
+					pic = ImageService.GetIcon (Ide.Gui.Stock.Warning, IconSize.Menu);
 				else if (ce.IsNew)
-					pic = ImageService.GetPixbuf (Stock.New, IconSize.Menu);
+					pic = ImageService.GetIcon (Stock.New, IconSize.Menu);
 				else
 					pic = null;
 				store.AppendValues (ce, pic, ce.File);

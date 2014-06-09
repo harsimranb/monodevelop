@@ -317,6 +317,10 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 
 				foreach (SolutionConfigurationEntry cce in cc.Configurations) {
 					SolutionEntityItem p = cce.Item;
+
+					// Don't save configurations for shared projects
+					if (!p.SupportsBuild ())
+						continue;
 					
                     // <ProjectGuid>...</ProjectGuid> in some Visual Studio generated F# project files 
                     // are missing "{"..."}" in their guid. This is not generally a problem since it
@@ -826,14 +830,17 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 					while (e is TargetInvocationException)
 						e = ((TargetInvocationException) e).InnerException;
 					
+					bool loadAsProject = false;
+
 					if (e is UnknownSolutionItemTypeException) {
 						var name = ((UnknownSolutionItemTypeException)e).TypeName;
 
 						var relPath = new FilePath (path).ToRelative (sol.BaseDirectory);
 						if (!string.IsNullOrEmpty (name)) {
 							var guids = name.Split (';');
-							var projectInfo = MSBuildProjectService.GetUnknownProjectTypeInfo (guids);
+							var projectInfo = MSBuildProjectService.GetUnknownProjectTypeInfo (guids, fileName);
 							if (projectInfo != null) {
+								loadAsProject = projectInfo.LoadFiles;
 								LoggingService.LogWarning (string.Format ("Could not load {0} project '{1}'. {2}", projectInfo.Name, relPath, projectInfo.GetInstructions ()));
 								monitor.ReportWarning (GettextCatalog.GetString ("Could not load {0} project '{1}'. {2}", projectInfo.Name, relPath, projectInfo.GetInstructions ()));
 							} else {
@@ -855,10 +862,19 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 							"Error while trying to load the project '{0}': {1}", projectPath, e.Message));
 					}
 
-					var uitem = new UnknownSolutionItem () {
-						FileName = projectPath,
-						LoadError = e.Message,
-					};
+					SolutionEntityItem uitem;
+					if (loadAsProject) {
+						uitem = new UnknownProject () {
+							FileName = projectPath,
+							LoadError = e.Message,
+						};
+					} else {
+						uitem = new UnknownSolutionItem () {
+							FileName = projectPath,
+							LoadError = e.Message,
+						};
+					}
+
 					var h = new MSBuildHandler (projTypeGuid, projectGuid) {
 						Item = uitem,
 					};
@@ -1057,7 +1073,7 @@ namespace MonoDevelop.Projects.Formats.MSBuild
 				}
 
 				SolutionEntityItem item;
-				if (slnData.ItemsByGuid.TryGetValue (projGuid, out item)) {
+				if (slnData.ItemsByGuid.TryGetValue (projGuid, out item) && item.SupportsBuild ()) {
 					string key = projGuid + "." + slnConfig;
 					SolutionConfigurationEntry combineConfigEntry = null;
 					if (cache.ContainsKey (key)) {

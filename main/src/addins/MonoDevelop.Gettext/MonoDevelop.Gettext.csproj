@@ -100,6 +100,11 @@
       <Name>Mono.Addins</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\external\xwt\Xwt\Xwt.csproj">
+      <Project>{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}</Project>
+      <Name>Xwt</Name>
+      <Private>False</Private>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -176,23 +181,29 @@
     <EmbeddedResource Include="icons\gettext-overlay-32.png">
       <LogicalName>gettext-overlay-32.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\translation-fuzzy-16.png">
-      <LogicalName>translation-fuzzy-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\done-16.png">
+      <LogicalName>done-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\translation-missing-16.png">
-      <LogicalName>translation-missing-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\done-16%402x.png">
+      <LogicalName>done-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\translation-valid-16.png">
-      <LogicalName>translation-valid-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\error-16.png">
+      <LogicalName>error-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\silk_accept.png">
-      <LogicalName>silk_accept.png</LogicalName>
+    <EmbeddedResource Include="icons\light\error-16%402x.png">
+      <LogicalName>error-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\silk_error.png">
-      <LogicalName>silk_error.png</LogicalName>
+    <EmbeddedResource Include="icons\light\warning-16.png">
+      <LogicalName>warning-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\silk_exclamation.png">
-      <LogicalName>silk_exclamation.png</LogicalName>
+    <EmbeddedResource Include="icons\light\warning-16%402x.png">
+      <LogicalName>warning-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-language-16.png">
+      <LogicalName>prefs-language-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-language-16%402x.png">
+      <LogicalName>prefs-language-light-16@2x.png</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

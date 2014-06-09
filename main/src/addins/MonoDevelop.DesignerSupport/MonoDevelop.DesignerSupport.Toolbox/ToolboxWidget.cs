@@ -46,8 +46,8 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 		bool listMode       = false;
 		int mouseX, mouseY;
 		Pango.FontDescription desc;
-		Gdk.Pixbuf discloseDown;
-		Gdk.Pixbuf discloseUp;
+		Xwt.Drawing.Image discloseDown;
+		Xwt.Drawing.Image discloseUp;
 		Gdk.Cursor handCursor;
 		
 		const uint animationTimeSpan = 10;
@@ -120,15 +120,6 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 			}
 		}
 		
-		public Gdk.Pixbuf GetIcon (string name, Gtk.IconSize size)
-		{
-			Gtk.IconSet iconset = Gtk.IconFactory.LookupDefault (name);
-			if (iconset != null) {
-				return iconset.RenderIcon (Gtk.Widget.DefaultStyle, Gtk.TextDirection.None, Gtk.StateType.Normal, size, null, null);
-			}
-			return null;
-		}
-		
 		public void ClearCategories ()
 		{
 			categories.Clear ();
@@ -142,8 +133,8 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 				if (item.Icon == null)
 					continue;
 
-				this.iconSize.Width  = Math.Max (this.iconSize.Width,  item.Icon.Width);
-				this.iconSize.Height  = Math.Max (this.iconSize.Height,  item.Icon.Height);
+				this.iconSize.Width  = Math.Max (this.iconSize.Width,  (int)item.Icon.Width);
+				this.iconSize.Height  = Math.Max (this.iconSize.Height,  (int)item.Icon.Height);
 			}
 		}
 		
@@ -157,8 +148,8 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 				           EventMask.KeyPressMask | 
 					       EventMask.PointerMotionMask;
 			this.CanFocus = true;
-			discloseDown = ImageService.GetPixbuf ("md-disclose-arrow-down", Gtk.IconSize.Menu);
-			discloseUp = ImageService.GetPixbuf ("md-disclose-arrow-up", Gtk.IconSize.Menu);
+			discloseDown = ImageService.GetIcon ("md-disclose-arrow-down", Gtk.IconSize.Menu);
+			discloseUp = ImageService.GetIcon ("md-disclose-arrow-up", Gtk.IconSize.Menu);
 			handCursor = new Cursor (CursorType.Hand1);
 		}
 
@@ -278,12 +269,11 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 				int width, height;
 				cr.SetSourceColor (CategoryLabelColor);
 				layout.GetPixelSize (out width, out height);
-				cr.MoveTo (xpos + CategoryLeftPadding, ypos + (itemDimension.Height - height) / 2);
+				cr.MoveTo (xpos + CategoryLeftPadding, ypos + (double)(Math.Round ((double)(itemDimension.Height - height) / 2)));
 				Pango.CairoHelper.ShowLayout (cr, headerLayout);
 
 				var img = category.IsExpanded ? discloseUp : discloseDown;
-				Gdk.CairoHelper.SetSourcePixbuf (cr, img, Allocation.Width - img.Width - CategoryRightPadding, ypos + (itemDimension.Height - img.Height) / 2);
-				cr.Paint ();
+				cr.DrawImage (this, img, Allocation.Width - img.Width - CategoryRightPadding, ypos + Math.Round ((itemDimension.Height - img.Height) / 2));
 
 				lastCategory = category;
 				lastCategoryYpos = ypos + itemDimension.Height;
@@ -295,17 +285,15 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 					cr.Fill ();
 				}
 				if (listMode || !curCategory.CanIconizeItems)  {
-					Gdk.CairoHelper.SetSourcePixbuf (cr, item.Icon, xpos + ItemLeftPadding, ypos + (itemDimension.Height - item.Icon.Height) / 2);
-					cr.Paint ();
+					cr.DrawImage (this, item.Icon, xpos + ItemLeftPadding, ypos + Math.Round ((itemDimension.Height - item.Icon.Height) / 2));
 					layout.SetText (item.Text);
 					int width, height;
 					layout.GetPixelSize (out width, out height);
 					cr.SetSourceColor (Style.Text (item != this.SelectedItem ? StateType.Normal : StateType.Selected).ToCairoColor ());
-					cr.MoveTo (xpos + ItemLeftPadding + IconSize.Width + ItemIconTextItemSpacing, ypos + (itemDimension.Height - height) / 2);
+					cr.MoveTo (xpos + ItemLeftPadding + IconSize.Width + ItemIconTextItemSpacing, ypos + (double)(Math.Round ((double)(itemDimension.Height - height) / 2)));
 					Pango.CairoHelper.ShowLayout (cr, layout);
 				} else {
-					Gdk.CairoHelper.SetSourcePixbuf (cr, item.Icon, xpos + (itemDimension.Width  - item.Icon.Width) / 2, ypos + (itemDimension.Height - item.Icon.Height) / 2);
-					cr.Paint ();
+					cr.DrawImage (this, item.Icon, xpos + Math.Round ((itemDimension.Width  - item.Icon.Width) / 2), ypos + Math.Round ((itemDimension.Height - item.Icon.Height) / 2));
 				}
 					
 				if (item == mouseOverItem) {
@@ -1055,8 +1043,8 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 	
 	public class Item : IComparable<Item>
 	{
-		static Gdk.Pixbuf defaultIcon;
-		Gdk.Pixbuf icon;
+		static Xwt.Drawing.Image defaultIcon;
+		Xwt.Drawing.Image icon;
 		string     text;
 		string     tooltip;
 		object     tag;
@@ -1070,7 +1058,7 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 			}
 		}
 		
-		public Gdk.Pixbuf Icon {
+		public Xwt.Drawing.Image Icon {
 			get {
 				if (node != null)
 					return node.Icon;
@@ -1078,14 +1066,10 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 			}
 		}
 
-		static Gdk.Pixbuf DefaultIcon {
+		static Xwt.Drawing.Image DefaultIcon {
 			get {
-				if (defaultIcon == null) {
-					Gtk.Label lab = new Gtk.Label ();
-					lab.EnsureStyle ();
-					defaultIcon = lab.RenderIcon (Stock.MissingImage, IconSize.Menu, string.Empty);
-					lab.Destroy ();
-				}
+				if (defaultIcon == null)
+					defaultIcon = ImageService.GetIcon (Stock.MissingImage, IconSize.Menu);
 				return defaultIcon;
 			}
 		}
@@ -1124,15 +1108,15 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 		{
 		}
 		
-		public Item (Gdk.Pixbuf icon, string text) : this (icon, text, null)
+		public Item (Xwt.Drawing.Image icon, string text) : this (icon, text, null)
 		{
 		}
 		
-		public Item (Gdk.Pixbuf icon, string text, string tooltip) : this (icon, text, tooltip, null)
+		public Item (Xwt.Drawing.Image icon, string text, string tooltip) : this (icon, text, tooltip, null)
 		{
 		}
 		
-		public Item (Gdk.Pixbuf icon, string text, string tooltip, object tag)
+		public Item (Xwt.Drawing.Image icon, string text, string tooltip, object tag)
 		{
 			this.icon    = icon;
 			this.text    = text;

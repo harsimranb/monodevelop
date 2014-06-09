@@ -38,6 +38,12 @@ using MonoDevelop.Projects;
 using MonoDevelop.Ide.CustomTools;
 using System.Resources.Tools;
 using System.CodeDom.Compiler;
+using System.CodeDom;
+using System.Linq;
+using MonoDevelop.Core.Assemblies;
+using System.Resources;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace MonoDevelop.Ide.CustomTools
 {
@@ -68,9 +74,23 @@ namespace MonoDevelop.Ide.CustomTools
 				var outputfile = file.FilePath.ChangeExtension (".Designer." + provider.FileExtension);
 				var ns = CustomToolService.GetFileNamespace (file, outputfile);
 				var cn = provider.CreateValidIdentifier (file.FilePath.FileNameWithoutExtension);
+				var rd = new Dictionary<object, object> ();
+
+				using (var r = new ResXResourceReader (file.FilePath)) {
+					r.UseResXDataNodes = true;
+					r.BasePath = Path.GetDirectoryName (file.FilePath.ParentDirectory);
+
+					foreach (DictionaryEntry e in r) {
+						rd.Add (e.Key, e.Value);
+					}
+				}
 
 				string[] unmatchable;
-				var ccu = StronglyTypedResourceBuilder.Create (file.FilePath, cn, ns, provider, internalClass, out unmatchable);
+				var ccu = StronglyTypedResourceBuilder.Create (rd, cn, ns, provider, internalClass, out unmatchable);
+				
+				if (TargetsPcl2Framework (dnp)) {
+					FixupPclTypeInfo (ccu);
+				}
 
 				foreach (var p in unmatchable) {
 					var msg = string.Format ("Could not generate property for resource ID '{0}'", p);
@@ -82,6 +102,31 @@ namespace MonoDevelop.Ide.CustomTools
 
 				result.GeneratedFilePath = outputfile;
 			};
+		}
+
+		static bool TargetsPcl2Framework (DotNetProject dnp)
+		{
+			if (dnp.TargetFramework.Id.Identifier != TargetFrameworkMoniker.ID_PORTABLE)
+				return false;
+			var asms = dnp.AssemblyContext.GetAssemblies (dnp.TargetFramework);
+			return asms.Any (a => a.Package != null && a.Package.IsFrameworkPackage && a.Name == "System.Runtime");
+		}
+
+		//works with .NET 4.5.1 and Mono 3.4.0
+		static void FixupPclTypeInfo (CodeCompileUnit ccu)
+		{
+			try {
+				ccu.Namespaces [0].Imports.Add (new CodeNamespaceImport ("System.Reflection"));
+				var assignment = ccu.Namespaces [0].Types [0]
+					.Members.OfType<CodeMemberProperty> ().Single (t => t.Name == "ResourceManager")
+					.GetStatements.OfType<CodeConditionStatement> ().Single ()
+					.TrueStatements.OfType<CodeVariableDeclarationStatement> ().Single ();
+				var initExpr = (CodeObjectCreateExpression) assignment.InitExpression;
+				var typeofExpr = (CodePropertyReferenceExpression) initExpr.Parameters [1];
+				typeofExpr.TargetObject = new CodeMethodInvokeExpression (typeofExpr.TargetObject, "GetTypeInfo");
+			} catch (Exception ex) {
+				LoggingService.LogWarning ("Failed to fixup resgen output for PCL", ex);
+			}
 		}
 	}
 }

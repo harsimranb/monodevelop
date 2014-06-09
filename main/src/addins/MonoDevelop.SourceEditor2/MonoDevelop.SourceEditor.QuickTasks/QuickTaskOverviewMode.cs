@@ -34,12 +34,44 @@ using ICSharpCode.NRefactory;
 using ICSharpCode.NRefactory.Refactoring;
 using MonoDevelop.Ide;
 using System.Linq;
+using MonoDevelop.Components;
 using Mono.TextEditor.Theatrics;
+using Xwt.Drawing;
 
 namespace MonoDevelop.SourceEditor.QuickTasks
 {
 	public class QuickTaskOverviewMode : DrawingArea
 	{
+		static Xwt.Drawing.Image searchImage = Xwt.Drawing.Image.FromResource ("issues-busy-light-16.png");
+		static Xwt.Drawing.Image okImage = Xwt.Drawing.Image.FromResource ("issues-ok-light-16.png");
+		static Xwt.Drawing.Image warningImage = Xwt.Drawing.Image.FromResource ("issues-warning-light-16.png");
+		static Xwt.Drawing.Image errorImage = Xwt.Drawing.Image.FromResource ("issues-error-light-16.png");
+		static Xwt.Drawing.Image suggestionImage = Xwt.Drawing.Image.FromResource ("issues-suggestion-light-16.png");
+
+		public static Xwt.Drawing.Image SuggestionImage {
+			get {
+				return suggestionImage;
+			}
+		}
+
+		public static Xwt.Drawing.Image ErrorImage {
+			get {
+				return errorImage;
+			}
+		}
+
+		public static Xwt.Drawing.Image WarningImage {
+			get {
+				return warningImage;
+			}
+		}
+
+		public static Xwt.Drawing.Image OkImage {
+			get {
+				return okImage;
+			}
+		}
+
 		//TODO: find a way to look these up from the theme
 		static readonly Cairo.Color win81Background = new Cairo.Color (240/255d, 240/255d, 240/255d);
 		static readonly Cairo.Color win81Slider = new Cairo.Color (205/255d, 205/255d, 205/255d);
@@ -64,7 +96,7 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 			}
 		}
 
-		public IEnumerable<TextLocation> AllUsages {
+		public IEnumerable<Usage> AllUsages {
 			get {
 				return parentStrip.AllUsages;
 			}
@@ -77,8 +109,8 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 				EventMask.PointerMotionMask | EventMask.LeaveNotifyMask | EventMask.EnterNotifyMask;
 			vadjustment = this.parentStrip.VAdjustment;
 
-			vadjustment.ValueChanged += RedrawOnUpdate;
-			vadjustment.Changed += RedrawOnUpdate;
+			vadjustment.ValueChanged += RedrawOnVAdjustmentChange;
+			vadjustment.Changed += RedrawOnVAdjustmentChange;
 			parentStrip.TaskProviderUpdated += RedrawOnUpdate;
 			TextEditor = parent.TextEditor;
 //			TextEditor.Caret.PositionChanged += CaretPositionChanged;
@@ -138,12 +170,19 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 			
 			parentStrip.TaskProviderUpdated -= RedrawOnUpdate;
 			
-			vadjustment.ValueChanged -= RedrawOnUpdate;
-			vadjustment.Changed -= RedrawOnUpdate;
+			vadjustment.ValueChanged -= RedrawOnVAdjustmentChange;
+			vadjustment.Changed -= RedrawOnVAdjustmentChange;
 		}
 		
 		void RedrawOnUpdate (object sender, EventArgs e)
 		{
+			QueueDraw ();
+		}
+
+		void RedrawOnVAdjustmentChange (object sender, EventArgs e)
+		{
+			if (!QuickTaskStrip.MergeScrollBarAndQuickTasks)
+				return;
 			QueueDraw ();
 		}
 
@@ -538,55 +577,34 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 
 		protected void DrawIndicator (Cairo.Context cr, Severity severity)
 		{
-			Mono.TextEditor.Highlighting.AmbientColor color;
+			Xwt.Drawing.Image image;
 			switch (severity) {
 			case Severity.Error:
-				color = parentStrip.TextEditor.ColorStyle.AnalysisStatusErrorsIcon;
+				image = errorImage;
 				break;
 			case Severity.Warning:
-				color = parentStrip.TextEditor.ColorStyle.AnalysisStatusWarningsIcon;
+				image = warningImage;
 				break;
 			case Severity.Suggestion:
 			case Severity.Hint:
-				color = parentStrip.TextEditor.ColorStyle.AnalysisStatusSuggestionsIcon;
+				image = suggestionImage;
 				break;
 			default:
-				color = parentStrip.TextEditor.ColorStyle.AnalysisStatusAllGoodIcon;
+				image = okImage;
 				break;
 			}
 
-			DrawIndicator (cr, color.Color, color.BorderColor);
+			DrawIndicator (cr, image);
 		}
 
 		protected void DrawSearchIndicator (Cairo.Context cr)
 		{
-			var darkColor = (HslColor)TextEditor.ColorStyle.SearchResult.Color;
-			darkColor.L *= 0.5;
-			DrawIndicator (cr, TextEditor.ColorStyle.SearchResultMain.Color, darkColor);
+			DrawIndicator (cr, searchImage);
 		}
 
-		void DrawIndicator (Cairo.Context cr, Cairo.Color color, Cairo.Color borderColor)
+		void DrawIndicator (Cairo.Context cr, Xwt.Drawing.Image img)
 		{
-			const int indicatorPadding = 3;
-			const int indicatorDiameter = 8;
-			var x1 = Allocation.Width / 2d;
-			var y1 = indicatorPadding + indicatorDiameter / 2d;
-
-			cr.Arc (x1, y1 + 1, indicatorDiameter / 2d, 0, 2 * Math.PI);
-			cr.SetSourceRGBA (0, 0, 0, 0.2);
-			cr.Fill ();
-
-			cr.Arc (x1, y1, indicatorDiameter / 2d, 0, 2 * Math.PI);
-			cr.SetSourceColor (color);
-			cr.Fill ();
-
-			cr.Arc (x1, y1, indicatorDiameter / 2d - 1, 0, 2 * Math.PI);
-			cr.SetSourceRGBA (1, 1, 1, 0.1);
-			cr.Stroke ();
-
-			cr.Arc (x1, y1, indicatorDiameter / 2d, 0, 2 * Math.PI);
-			cr.SetSourceColor (borderColor);
-			cr.Stroke ();
+			cr.DrawImage (this, img, Math.Round ((Allocation.Width - img.Width) / 2), -1);
 		}
 
 		protected override void OnSizeRequested (ref Requisition requisition)
@@ -638,19 +656,29 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 		protected Severity DrawQuickTasks (Cairo.Context cr)
 		{
 			Severity severity = Severity.None;
-			/*
+
 			foreach (var usage in AllUsages) {
-				double y = GetYPosition (usage.Line);
+				double y = GetYPosition (usage.Location.Line);
 				var usageColor = TextEditor.ColorStyle.PlainText.Foreground;
 				usageColor.A = 0.4;
-				cr.Color = usageColor;
+				HslColor color;
+				if ((usage.UsageType & MonoDevelop.Ide.FindInFiles.ReferenceUsageType.Write) != 0) {
+					color = TextEditor.ColorStyle.ChangingUsagesRectangle.Color;
+				} else if ((usage.UsageType & MonoDevelop.Ide.FindInFiles.ReferenceUsageType.Read) != 0) {
+					color = TextEditor.ColorStyle.UsagesRectangle.Color;
+				} else {
+					color = usageColor;
+				}
+				color.L = 0.5;
+				cr.Color = color;
 				cr.MoveTo (0, y - 3);
 				cr.LineTo (5, y);
 				cr.LineTo (0, y + 3);
+				cr.LineTo (0, y - 3);
 				cr.ClosePath ();
 				cr.Fill ();
 			}
-*/
+
 			foreach (var task in AllTasks) {
 				double y = GetYPosition (task.Location.Line);
 
@@ -676,11 +704,11 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 			cr.MoveTo (0.5, 0);
 			cr.LineTo (0.5, Allocation.Height);
 			if (TextEditor.ColorStyle != null) {
-				var col = (HslColor)TextEditor.ColorStyle.PlainText.Background;
+				var col = TextEditor.ColorStyle.PlainText.Background.ToXwtColor ();
 				if (!Platform.IsWindows) {
-					col.L *= 0.88;
+					col.Light *= 0.88;
 				}
-				cr.SetSourceColor (col);
+				cr.SetSourceColor (col.ToCairoColor ());
 			}
 			cr.Stroke ();
 		}
@@ -730,7 +758,8 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 				//compute new color such that it will produce same color when blended with bg
 				c = AddAlpha (win81Background, c, 0.5d);
 			} else {
-				c = new Cairo.Color (0, 0, 0, barColorValue * (barAlphaMax - barAlphaMin) + barAlphaMin);
+				var brightness = HslColor.Brightness (TextEditor.ColorStyle.PlainText.Background); 
+				c = new Cairo.Color (1 - brightness, 1 - brightness, 1 - brightness, barColorValue * (barAlphaMax - barAlphaMin) + barAlphaMin);
 			}
 			cr.SetSourceColor (c);
 			cr.Fill ();
@@ -779,12 +808,12 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 							cr.SetSource (pattern);
 						}
 					} else {
-						var col = (HslColor)TextEditor.ColorStyle.PlainText.Background;
-						col.L *= 0.948;
+						var col = TextEditor.ColorStyle.PlainText.Background.ToXwtColor();
+						col.Light *= 0.948;
 						using (var grad = new Cairo.LinearGradient (0, 0, Allocation.Width, 0)) {
-							grad.AddColorStop (0, col);
+							grad.AddColorStop (0, col.ToCairoColor ());
 							grad.AddColorStop (0.7, TextEditor.ColorStyle.PlainText.Background);
-							grad.AddColorStop (1, col);
+							grad.AddColorStop (1, col.ToCairoColor ());
 							cr.SetSource (grad);
 						}
 						/*
@@ -812,8 +841,9 @@ namespace MonoDevelop.SourceEditor.QuickTasks
 					}
 				}
 				DrawCaret (cr);
-				
-				DrawBar (cr);
+
+				if (QuickTaskStrip.MergeScrollBarAndQuickTasks)
+					DrawBar (cr);
 				DrawLeftBorder (cr);
 			}
 			

@@ -40,8 +40,8 @@ namespace MonoDevelop.Ide.CodeCompletion
 	public class CompletionListWindow : ListWindow, IListDataProvider
 	{
 		const int declarationWindowMargin = 3;
-		
-		TooltipInformationWindow declarationviewwindow = new TooltipInformationWindow ();
+
+		TooltipInformationWindow declarationviewwindow;
 		ICompletionData currentData;
 		Widget parsingMessage;
 		int initialWordLength;
@@ -254,7 +254,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 						return false;
 					}
 					
-					if (declarationviewwindow.Multiple) {
+					if (declarationviewwindow != null && declarationviewwindow.Multiple) {
 						if (key == Gdk.Key.Left)
 							declarationviewwindow.OverloadLeft ();
 						else
@@ -539,9 +539,21 @@ namespace MonoDevelop.Ide.CodeCompletion
 			}
 		}
 
+		void EnsureDeclarationViewWindow ()
+		{
+			if (declarationviewwindow == null) {
+				declarationviewwindow = new TooltipInformationWindow ();
+			} else {
+				declarationviewwindow.SetDefaultScheme ();
+			}
+		}
+
 		void RepositionDeclarationViewWindow ()
 		{
-			if (declarationviewwindow == null || base.GdkWindow == null)
+			if (base.GdkWindow == null)
+				return;
+			EnsureDeclarationViewWindow ();
+			if (declarationviewwindow.Overloads == 0)
 				return;
 			var selectedItem = List.SelectedItem;
 			Gdk.Rectangle rect = List.GetRowArea (selectedItem);
@@ -572,7 +584,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 				filteredOverloads = new ICompletionData[] { data };
 			}
 
-			
+			EnsureDeclarationViewWindow ();
 			if (data != currentData) {
 				declarationviewwindow.Clear ();
 				var overloads = new List<ICompletionData> (filteredOverloads);
@@ -667,12 +679,12 @@ namespace MonoDevelop.Ide.CodeCompletion
 			return defaultComparer.Compare (completionDataList [n], completionDataList [m]);
 		}
 		
-		Gdk.Pixbuf IListDataProvider.GetIcon (int n)
+		Xwt.Drawing.Image IListDataProvider.GetIcon (int n)
 		{
 			string iconName = ((CompletionData)completionDataList[n]).Icon;
 			if (string.IsNullOrEmpty (iconName))
 				return null;
-			return ImageService.GetPixbuf (iconName, IconSize.Menu);
+			return ImageService.GetIcon (iconName, IconSize.Menu);
 		}
 		
 		#endregion

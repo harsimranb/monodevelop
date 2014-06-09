@@ -24,15 +24,11 @@
 // THE SOFTWARE.
 
 using System;
-using System.IO;
 using System.Text;
 using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
 
 using MonoDevelop.Projects;
-using MonoDevelop.Ide.Projects;
-using MonoDevelop.Components;
 using MonoDevelop.Core;
 using MonoDevelop.Core.Assemblies;
 
@@ -72,8 +68,6 @@ namespace MonoDevelop.Ide.Projects.OptionPanels
 		Image infoImage;
 		ComboBox selectorCombo;
 		bool disableEvents;
-
-		const bool UseShortDescriptionInSelector = false;
 
 		class OptionComboItem {
 			public readonly string Name;
@@ -235,18 +229,7 @@ namespace MonoDevelop.Ide.Projects.OptionPanels
 			string description;
 			if (fx == missingFramework)
 				description = " - not installed";
-			else if (UseShortDescriptionInSelector) {
-				var sb = new StringBuilder ();
-				sb.Append (" (");
-				foreach (var sfx in fx.SupportedFrameworks) {
-					var label = GetShortName (sfx);
-					if (sb.Length > 2)
-						sb.Append (", ");
-					sb.Append (label);
-				}
-				sb.Append (")");
-				description = sb.ToString ();
-			} else
+			else
 				description = string.Empty;
 
 			return string.Format (
@@ -430,8 +413,8 @@ namespace MonoDevelop.Ide.Projects.OptionPanels
 			warning.SetAlignment (0.0f, 0.5f);
 			warning.Show ();
 
-			infoImage = new Image (GetType ().Assembly, "warning-16.png");
-			warningImage = new Image (GetType ().Assembly, "error-16.png");
+			infoImage = new Image (GetType ().Assembly, "warning-light-16.png");
+			warningImage = new Image (GetType ().Assembly, "error-light-16.png");
 
 			warningHBox = new HBox (false, 6);
 			warningHBox.PackStart (infoImage, false, false, 0);

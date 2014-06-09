@@ -115,10 +115,10 @@ namespace MonoDevelop.AssemblyBrowser
 		{
 			this.Build ();
 
-			buttonBack = new Gtk.Button (new Gtk.Image (ImageService.GetPixbuf ("md-breadcrumb-prev")));
+			buttonBack = new Gtk.Button (ImageService.GetImage ("md-breadcrumb-prev", Gtk.IconSize.Menu));
 			buttonBack.Clicked += OnNavigateBackwardActionActivated;
 
-			buttonForeward = new Gtk.Button (new Gtk.Image (ImageService.GetPixbuf ("md-breadcrumb-next")));
+			buttonForeward = new Gtk.Button (ImageService.GetImage ("md-breadcrumb-next", Gtk.IconSize.Menu));
 			buttonForeward.Clicked += OnNavigateForwardActionActivated;
 
 			comboboxVisibilty = ComboBox.NewText ();
@@ -172,8 +172,8 @@ namespace MonoDevelop.AssemblyBrowser
 				new AssemblyNodeBuilder (this),
 				new ModuleReferenceNodeBuilder (),
 				new AssemblyReferenceNodeBuilder (this),
-				new AssemblyReferenceFolderNodeBuilder (this),
-				new AssemblyResourceFolderNodeBuilder (),
+				//new AssemblyReferenceFolderNodeBuilder (this),
+				//new AssemblyResourceFolderNodeBuilder (),
 				new ResourceNodeBuilder (),
 				new NamespaceBuilder (this),
 				new DomTypeNodeBuilder (this),
@@ -249,14 +249,14 @@ namespace MonoDevelop.AssemblyBrowser
 			notebook1.Page = 0;
 			//this.searchWidget.Visible = false;
 				
-			typeListStore = new Gtk.ListStore (typeof(Gdk.Pixbuf), // type image
+			typeListStore = new Gtk.ListStore (typeof(Xwt.Drawing.Image), // type image
 			                                   typeof(string), // name
 			                                   typeof(string), // namespace
 			                                   typeof(string), // assembly
 				                               typeof(IMember)
 			                                  );
 			
-			memberListStore = new Gtk.ListStore (typeof(Gdk.Pixbuf), // member image
+			memberListStore = new Gtk.ListStore (typeof(Xwt.Drawing.Image), // member image
 			                                   typeof(string), // name
 			                                   typeof(string), // Declaring type full name
 			                                   typeof(string), // assembly
@@ -314,7 +314,7 @@ namespace MonoDevelop.AssemblyBrowser
 			var menuSet = new CommandEntrySet ();
 			menuSet.AddItem (EditCommands.SelectAll);
 			menuSet.AddItem (EditCommands.Copy);
-			IdeApp.CommandService.ShowContextMenu (menuSet, this);
+			IdeApp.CommandService.ShowContextMenu (this, args.Event, menuSet, this);
 		}
 
 		void SearchTreeviewhandleRowActivated (object o, RowActivatedArgs args)
@@ -380,8 +380,10 @@ namespace MonoDevelop.AssemblyBrowser
 			if (nav != null)
 				return nav;
 			// Constructor may be a generated default without implementation.
-			if (helpUrl.StartsWith ("M:", StringComparison.Ordinal) && helpUrl.EndsWith (".#ctor", StringComparison.Ordinal))
-				return SearchMember ("T" + helpUrl.Substring (1, helpUrl.Length - 1 - ".#ctor".Length));
+			var ctorIdx = helpUrl.IndexOf (".#ctor", StringComparison.Ordinal);
+			if (helpUrl.StartsWith ("M:", StringComparison.Ordinal) && ctorIdx > 0) {
+				return SearchMember ("T" + helpUrl.Substring (1, ctorIdx - 1));
+			}
 			return null;
 		}
 		
@@ -642,11 +644,11 @@ namespace MonoDevelop.AssemblyBrowser
 			case SearchMode.Decompiler:
 				col = new TreeViewColumn ();
 				col.Title = GettextCatalog.GetString ("Member");
-				crp = new Gtk.CellRendererPixbuf ();
+				crp = new CellRendererImage ();
 				crt = new Gtk.CellRendererText ();
 				col.PackStart (crp, false);
 				col.PackStart (crt, true);
-				col.AddAttribute (crp, "pixbuf", 0);
+				col.AddAttribute (crp, "image", 0);
 				col.AddAttribute (crt, "text", 1);
 				searchTreeview.AppendColumn (col);
 				col.Resizable = true;
@@ -659,11 +661,11 @@ namespace MonoDevelop.AssemblyBrowser
 			case SearchMode.Type:
 				col = new TreeViewColumn ();
 				col.Title = GettextCatalog.GetString ("Type");
-				crp = new Gtk.CellRendererPixbuf ();
+				crp = new CellRendererImage ();
 				crt = new Gtk.CellRendererText ();
 				col.PackStart (crp, false);
 				col.PackStart (crt, true);
-				col.AddAttribute (crp, "pixbuf", 0);
+				col.AddAttribute (crp, "image", 0);
 				col.AddAttribute (crt, "text", 1);
 				searchTreeview.AppendColumn (col);
 				col.Resizable = true;
@@ -752,7 +754,7 @@ namespace MonoDevelop.AssemblyBrowser
 							foreach (var member in kv.Value) {
 								if (worker.CancellationPending)
 									return;
-								memberListStore.AppendValues (ImageService.GetPixbuf (member.GetStockIcon (), Gtk.IconSize.Menu),
+								memberListStore.AppendValues (ImageService.GetIcon (member.GetStockIcon (), Gtk.IconSize.Menu),
 								                              member.Name,
 								                              member.DeclaringTypeDefinition.FullName,
 								                              kv.Key.Assembly.FullName,
@@ -787,7 +789,7 @@ namespace MonoDevelop.AssemblyBrowser
 							foreach (var member in kv.Value) {
 								if (worker.CancellationPending)
 									return;
-								memberListStore.AppendValues ("", //iImageService.GetPixbuf (member.StockIcon, Gtk.IconSize.Menu),
+								memberListStore.AppendValues ("", //iImageService.GetIcon (member.StockIcon, Gtk.IconSize.Menu),
 								                              member.Name,
 								                              member.DeclaringTypeDefinition.FullName,
 								                              kv.Key.Assembly.FullName,
@@ -817,7 +819,7 @@ namespace MonoDevelop.AssemblyBrowser
 							foreach (var member in kv.Value) {
 								if (worker.CancellationPending)
 									return;
-								memberListStore.AppendValues ("", //ImageService.GetPixbuf (member.StockIcon, Gtk.IconSize.Menu),
+								memberListStore.AppendValues ("", //ImageService.GetIcon (member.StockIcon, Gtk.IconSize.Menu),
 								                              member.Name,
 								                              member.DeclaringTypeDefinition.FullName,
 								                              kv.Key.Assembly.FullName,
@@ -844,7 +846,7 @@ namespace MonoDevelop.AssemblyBrowser
 							foreach (var type in kv.Value) {
 								if (worker.CancellationPending)
 									return;
-								typeListStore.AppendValues (ImageService.GetPixbuf (type.GetStockIcon (), Gtk.IconSize.Menu),
+								typeListStore.AppendValues (ImageService.GetIcon (type.GetStockIcon (), Gtk.IconSize.Menu),
 								                            type.Name,
 								                            type.Namespace,
 								                            kv.Key.Assembly.FullName,
@@ -1419,7 +1421,11 @@ namespace MonoDevelop.AssemblyBrowser
 				// Select the result.
 				if (selectReference) {
 					ITreeNavigator navigator = TreeView.GetNodeAtObject (result);
-					navigator.Selected = true;
+					if (navigator != null) {
+						navigator.Selected = true;
+					} else {
+						LoggingService.LogWarning (result + " could not be found.");
+					}
 				}
 
 				return result;
