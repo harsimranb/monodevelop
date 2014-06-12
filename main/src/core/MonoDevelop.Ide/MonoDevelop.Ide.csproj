@@ -69,6 +69,7 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Design" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MonoDevelop.Core\MonoDevelop.Core.csproj">
@@ -185,8 +186,11 @@
     <EmbeddedResource Include="icons\light\project-reference-overlay-16%402x.png">
       <LogicalName>project-reference-overlay-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\parser-16.png">
-      <LogicalName>parser-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\parser-16.png">
+      <LogicalName>parser-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\parser-16%402x.png">
+      <LogicalName>parser-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="templates\GenericProject.xpt.xml">
       <LogicalName>GenericProject.xpt.xml</LogicalName>
@@ -217,12 +221,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="options\KeyBindingSchemeMonoDevelop1.xml">
       <LogicalName>KeyBindingSchemeMonoDevelop1.xml</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\keyboard-shortcuts-16.png">
-      <LogicalName>keyboard-shortcuts-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\text-editor-16.png">
-      <LogicalName>text-editor-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\navigate-next-16.png">
       <LogicalName>navigate-next-16.png</LogicalName>
@@ -263,17 +261,17 @@
     <EmbeddedResource Include="MonoDevelop.Ide.StandardHeader\LGPL3LicencePolicy.xml">
       <LogicalName>LGPL3LicencePolicy.xml</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\tools-external-tools-16.png">
-      <LogicalName>tools-external-tools-16.png</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Ide.CodeFormatting\InvariantTextStylePolicy.xml">
       <LogicalName>InvariantTextStylePolicy.xml</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\add-namespace-16.png">
       <LogicalName>add-namespace-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\assembly-project-16.png">
-      <LogicalName>assembly-project-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\assembly-project-16.png">
+      <LogicalName>assembly-project-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\assembly-project-16%402x.png">
+      <LogicalName>assembly-project-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\breakpoint-16.png">
       <LogicalName>breakpoint-light-16.png</LogicalName>
@@ -287,11 +285,17 @@
     <EmbeddedResource Include="icons\light\breakpoint-disable-all-16%402x.png">
       <LogicalName>breakpoint-disable-all-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\breakpoint-disabled-16.png">
-      <LogicalName>breakpoint-disabled-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\breakpoint-disabled-16.png">
+      <LogicalName>breakpoint-disabled-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\breakpoint-invalid-16.png">
-      <LogicalName>breakpoint-invalid-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\breakpoint-disabled-16%402x.png">
+      <LogicalName>breakpoint-disabled-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\breakpoint-invalid-16.png">
+      <LogicalName>breakpoint-invalid-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\breakpoint-invalid-16%402x.png">
+      <LogicalName>breakpoint-invalid-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\breakpoint-new-16.png">
       <LogicalName>breakpoint-new-light-16.png</LogicalName>
@@ -305,12 +309,6 @@
     <EmbeddedResource Include="icons\light\breakpoint-on-off-16%402x.png">
       <LogicalName>breakpoint-on-off-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\breakpoint-clear-all-16.png">
-      <LogicalName>breakpoint-clear-all-light-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\breakpoint-clear-all-16%402x.png">
-      <LogicalName>breakpoint-clear-all-light-16@2x.png</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="icons\build-project-16.png">
       <LogicalName>build-project-16.png</LogicalName>
     </EmbeddedResource>
@@ -318,28 +316,22 @@
       <LogicalName>build-solution-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-template-16.png">
-      <LogicalName>element-template-16.png</LogicalName>
+      <LogicalName>element-template-light-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-template-16%402x.png">
-      <LogicalName>element-template-16@2x.png</LogicalName>
+      <LogicalName>element-template-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-template-surroundwith-16.png">
-      <LogicalName>element-template-surroundwith-16.png</LogicalName>
+      <LogicalName>element-template-surroundwith-light-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-template-surroundwith-16%402x.png">
-      <LogicalName>element-template-surroundwith-16@2x.png</LogicalName>
+      <LogicalName>element-template-surroundwith-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\comment-16.png">
       <LogicalName>comment-light-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\comment-16%402x.png">
       <LogicalName>comment-light-16@2x.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\compiler-options-16.png">
-      <LogicalName>compiler-options-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\custom-commands-16.png">
-      <LogicalName>custom-commands-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\edit-find-next-16.png">
       <LogicalName>edit-find-next-16.png</LogicalName>
@@ -401,8 +393,11 @@
     <EmbeddedResource Include="icons\light\element-method-16%402x.png">
       <LogicalName>element-method-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\element-method-new-16.png">
-      <LogicalName>element-method-new-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\element-method-new-16.png">
+      <LogicalName>element-method-new-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-method-new-16%402x.png">
+      <LogicalName>element-method-new-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-namespace-16.png">
       <LogicalName>element-namespace-light-16.png</LogicalName>
@@ -458,20 +453,26 @@
     <EmbeddedResource Include="icons\light\file-xml-32%402x.png">
       <LogicalName>file-xml-light-32@2x.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\file-script-16.png">
+      <LogicalName>file-script-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\file-script-16%402x.png">
+      <LogicalName>file-script-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\file-script-32.png">
+      <LogicalName>file-script-light-32.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\file-script-32%402x.png">
+      <LogicalName>file-script-light-32@2x.png</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="icons\folder-new-16.png">
       <LogicalName>folder-new-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\formatting-16.png">
-      <LogicalName>formatting-16.png</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-keyword-16.png">
-      <LogicalName>element-keyword-16.png</LogicalName>
+      <LogicalName>element-keyword-light-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-keyword-16%402x.png">
-      <LogicalName>element-keyword-16@2x.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\markers-rulers-16.png">
-      <LogicalName>markers-rulers-16.png</LogicalName>
+      <LogicalName>element-keyword-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\monodevelop-16.png">
       <LogicalName>monodevelop-16.png</LogicalName>
@@ -485,11 +486,17 @@
     <EmbeddedResource Include="icons\monodevelop-48.png">
       <LogicalName>monodevelop-48.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\package-22.png">
-      <LogicalName>package-light-22.png</LogicalName>
+    <EmbeddedResource Include="icons\light\package-16.png">
+      <LogicalName>package-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\package-22%402x.png">
-      <LogicalName>package-light-22@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\package-16%402x.png">
+      <LogicalName>package-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\package-24.png">
+      <LogicalName>package-light-24.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\package-24%402x.png">
+      <LogicalName>package-light-24@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\package-32.png">
       <LogicalName>package-light-32.png</LogicalName>
@@ -503,11 +510,11 @@
     <EmbeddedResource Include="icons\light\package-48%402x.png">
       <LogicalName>package-light-48@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\task-list-16.png">
-      <LogicalName>task-list-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-task-list-16.png">
+      <LogicalName>pad-task-list-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\task-list-16%402x.png">
-      <LogicalName>task-list-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-task-list-16%402x.png">
+      <LogicalName>pad-task-list-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\project-16.png">
       <LogicalName>project-light-16.png</LogicalName>
@@ -539,14 +546,32 @@
     <EmbeddedResource Include="icons\light\project-library-overlay-32%402x.png">
       <LogicalName>project-library-overlay-light-32@2x.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\project-shared-assets-overlay-32.png">
+      <LogicalName>project-shared-assets-overlay-light-32.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\project-shared-assets-overlay-32%402x.png">
+      <LogicalName>project-shared-assets-overlay-light-32@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\project-package-overlay-32.png">
+      <LogicalName>project-package-overlay-light-32.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\project-package-overlay-32%402x.png">
+      <LogicalName>project-package-overlay-light-32@2x.png</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="icons\project-new-16.png">
       <LogicalName>project-new-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\project-reference-16.png">
-      <LogicalName>project-reference-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\package-source-16.png">
+      <LogicalName>package-source-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\project-reference-16%402x.png">
-      <LogicalName>project-reference-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\package-source-16%402x.png">
+      <LogicalName>package-source-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\reference-16.png">
+      <LogicalName>reference-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\reference-16%402x.png">
+      <LogicalName>reference-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\solution-16.png">
       <LogicalName>solution-light-16.png</LogicalName>
@@ -565,27 +590,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="icons\solution-new-16.png">
       <LogicalName>solution-new-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\syntax-highlighting-16.png">
-      <LogicalName>syntax-highlighting-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\system-software-update-22.png">
-      <LogicalName>system-software-update-22.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\text-editor-behavior-16.png">
-      <LogicalName>text-editor-behavior-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\letters-16.png">
-      <LogicalName>letters-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\hammer-16.png">
-      <LogicalName>hammer-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\drive-16.png">
-      <LogicalName>drive-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\monkey-16.png">
-      <LogicalName>monkey-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\element-visibility-internal-overlay-16.png">
       <LogicalName>element-visibility-internal-overlay-light-16.png</LogicalName>
@@ -640,15 +644,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\workspace-32%402x.png">
       <LogicalName>workspace-light-32@2x.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons-components\MonoDevelop.Close.png">
-      <LogicalName>MonoDevelop.Close.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons-components\MonoDevelop.Components.PropertyGrid.DefaultPropertyTab.bmp">
-      <LogicalName>MonoDevelop.Components.PropertyGrid.DefaultPropertyTab.bmp</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons-components\MonoDevelop.Components.PropertyGrid.EventPropertyTab.bmp">
-      <LogicalName>MonoDevelop.Components.PropertyGrid.EventPropertyTab.bmp</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Components.Docking\icons\light\pad-minimize-9.png">
       <LogicalName>pad-minimize-light-9.png</LogicalName>
@@ -710,9 +705,6 @@
     <EmbeddedResource Include="MonoDevelop.Components.Commands\CommandsExtensionModel.addin.xml">
       <LogicalName>CommandsExtensionModel.addin.xml</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\text-quickfix-16.png">
-      <LogicalName>text-quickfix-16.png</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Ide.Gui.Pads.ClassPad\ClassPadContextMenu.addin.xml">
       <LogicalName>ClassPadContextMenu.addin.xml</LogicalName>
     </EmbeddedResource>
@@ -740,14 +732,17 @@
     <EmbeddedResource Include="branding\SplashScreen.png">
       <LogicalName>SplashScreen.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons-components\MonoDevelop.Close.Over.png">
-      <LogicalName>MonoDevelop.Close.Over.png</LogicalName>
+    <EmbeddedResource Include="icons\light\popup-close-16.png">
+      <LogicalName>popup-close-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons-components\MonoDevelop.Close.Selected.Over.png">
-      <LogicalName>MonoDevelop.Close.Selected.Over.png</LogicalName>
+    <EmbeddedResource Include="icons\light\popup-close-16%402x.png">
+      <LogicalName>popup-close-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons-components\MonoDevelop.Close.Selected.png">
-      <LogicalName>MonoDevelop.Close.Selected.png</LogicalName>
+    <EmbeddedResource Include="icons\light\popup-close-hover-16.png">
+      <LogicalName>popup-close-hover-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\popup-close-hover-16%402x.png">
+      <LogicalName>popup-close-hover-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Components.MainToolbar\assets\light\btn-debug-base-left-cap-normal.png">
       <LogicalName>btn-debug-base-left-cap-normal-light.png</LogicalName>
@@ -833,28 +828,55 @@
     <EmbeddedResource Include="MonoDevelop.Components.MainToolbar\icons\light\ico-stop-normal-32%402x.png">
       <LogicalName>ico-stop-normal-light-32@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\disclose-arrow-down-16.png">
-      <LogicalName>disclose-arrow-down-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\disclose-arrow-down-16.png">
+      <LogicalName>disclose-arrow-down-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\disclose-arrow-up-16.png">
-      <LogicalName>disclose-arrow-up-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\disclose-arrow-down-16%402x.png">
+      <LogicalName>disclose-arrow-down-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\search-results-16.png">
-      <LogicalName>search-results-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\disclose-arrow-up-16.png">
+      <LogicalName>disclose-arrow-up-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\search-results-16%402x.png">
-      <LogicalName>search-results-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\disclose-arrow-up-16%402x.png">
+      <LogicalName>disclose-arrow-up-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\searchbox-clear-16.png">
-      <LogicalName>searchbox-clear-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-search-results-16.png">
+      <LogicalName>pad-search-results-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\tree-popup-button.png">
-      <LogicalName>tree-popup-button.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-search-results-16%402x.png">
+      <LogicalName>pad-search-results-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\searchbox-clear-16.png">
+      <LogicalName>searchbox-clear-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\searchbox-clear-16%402x.png">
+      <LogicalName>searchbox-clear-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\searchbox-search-16.png">
+      <LogicalName>searchbox-search-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\searchbox-search-16%402x.png">
+      <LogicalName>searchbox-search-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\tree-popup-button.png">
+      <LogicalName>tree-popup-button-light.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\tree-popup-button%402x.png">
+      <LogicalName>tree-popup-button-light@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\tree-popup-button-hover.png">
+      <LogicalName>tree-popup-button-hover-light.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\tree-popup-button-hover%402x.png">
+      <LogicalName>tree-popup-button-hover-light@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\tree-popup-button-down.png">
+      <LogicalName>tree-popup-button-down-light.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\tree-popup-button-down%402x.png">
+      <LogicalName>tree-popup-button-down-light@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Components\SearchEntry.cs" />
-    <EmbeddedResource Include="icons\searchbox-search-16.png">
-      <LogicalName>searchbox-search-16.png</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="icons\clear-all-bookmarks-16.png">
       <LogicalName>clear-all-bookmarks-16.png</LogicalName>
     </EmbeddedResource>
@@ -876,23 +898,23 @@
     <EmbeddedResource Include="icons\goto-prev-bookmark-16.png">
       <LogicalName>goto-prev-bookmark-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\application-output-16.png">
-      <LogicalName>application-output-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-application-output-16.png">
+      <LogicalName>pad-application-output-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\application-output-16%402x.png">
-      <LogicalName>application-output-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-application-output-16%402x.png">
+      <LogicalName>pad-application-output-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\immediate-16.png">
-      <LogicalName>immediate-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-immediate-16.png">
+      <LogicalName>pad-immediate-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\immediate-16%402x.png">
-      <LogicalName>immediate-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-immediate-16%402x.png">
+      <LogicalName>pad-immediate-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\generic-pad-16.png">
-      <LogicalName>generic-pad-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-generic-pad-16.png">
+      <LogicalName>pad-generic-pad-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\generic-pad-16%402x.png">
-      <LogicalName>generic-pad-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-generic-pad-16%402x.png">
+      <LogicalName>pad-generic-pad-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\replace-in-files-16.png">
       <LogicalName>replace-in-files-16.png</LogicalName>
@@ -908,9 +930,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\file-resource-32%402x.png">
       <LogicalName>file-resource-light-32@2x.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\save-all-16.png">
-      <LogicalName>save-all-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\file-text-32.png">
       <LogicalName>file-text-light-32.png</LogicalName>
@@ -954,11 +973,17 @@
     <EmbeddedResource Include="icons\light\tabbar-next-12%402x.png">
       <LogicalName>tabbar-next-light-12@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\breadcrumb-prev-normal-16.png">
-      <LogicalName>breadcrumb-prev-normal-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\breadcrumb-previous-normal-16.png">
+      <LogicalName>breadcrumb-previous-normal-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\breadcrumb-next-normal-16.png">
-      <LogicalName>breadcrumb-next-normal-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\breadcrumb-previous-normal-16%402x.png">
+      <LogicalName>breadcrumb-previous-normal-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\breadcrumb-next-normal-16.png">
+      <LogicalName>breadcrumb-next-normal-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\breadcrumb-next-normal-16%402x.png">
+      <LogicalName>breadcrumb-next-normal-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\status-building-1-14.png">
       <LogicalName>status-building-1-light-14.png</LogicalName>
@@ -1128,8 +1153,47 @@
     <EmbeddedResource Include="icons\light\information-16%402x.png">
       <LogicalName>information-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\tree-popup-button-down.png">
-      <LogicalName>tree-popup-button-down.png</LogicalName>
+    <EmbeddedResource Include="icons\light\information-24.png">
+      <LogicalName>information-light-24.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\information-24%402x.png">
+      <LogicalName>information-light-24@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\information-32.png">
+      <LogicalName>information-light-32.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\information-32%402x.png">
+      <LogicalName>information-light-32@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\information-48.png">
+      <LogicalName>information-light-48.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\information-48%402x.png">
+      <LogicalName>information-light-48@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-16.png">
+      <LogicalName>question-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-16%402x.png">
+      <LogicalName>question-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-24.png">
+      <LogicalName>question-light-24.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-24%402x.png">
+      <LogicalName>question-light-24@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-32.png">
+      <LogicalName>question-light-32.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-32%402x.png">
+      <LogicalName>question-light-32@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-48.png">
+      <LogicalName>question-light-48.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\question-48%402x.png">
+      <LogicalName>question-light-48@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\command-16.png">
       <LogicalName>command-light-16.png</LogicalName>
@@ -1148,9 +1212,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Components.MainToolbar\icons\light\ico-build-normal-32%402x.png">
       <LogicalName>ico-build-normal-light-32@2x.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\tree-popup-button-hover.png">
-      <LogicalName>tree-popup-button-hover.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\stop-16.png">
       <LogicalName>stop-light-16.png</LogicalName>
@@ -1200,26 +1261,11 @@
     <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\link-info.png">
       <LogicalName>link-info.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\star-normal-hover.png">
-      <LogicalName>star-normal-hover.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\star-normal.png">
-      <LogicalName>star-normal.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\star-pinned-hover.png">
-      <LogicalName>star-pinned-hover.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\star-pinned.png">
-      <LogicalName>star-pinned.png</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\new_solution.png">
       <LogicalName>new_solution.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\open_solution.png">
       <LogicalName>open_solution.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\locale-16.png">
-      <LogicalName>locale-16.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\link-overlay-16.png">
       <LogicalName>link-overlay-light-16.png</LogicalName>
@@ -1227,26 +1273,23 @@
     <EmbeddedResource Include="icons\light\link-overlay-16%402x.png">
       <LogicalName>link-overlay-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\sdk-locations-16.png">
-      <LogicalName>sdk-locations-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-error-list-16.png">
+      <LogicalName>pad-error-list-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\error-list-16.png">
-      <LogicalName>error-list-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-error-list-16%402x.png">
+      <LogicalName>pad-error-list-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\error-list-16%402x.png">
-      <LogicalName>error-list-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-error-list-errors-16.png">
+      <LogicalName>pad-error-list-errors-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\error-list-errors-16.png">
-      <LogicalName>error-list-errors-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-error-list-errors-16%402x.png">
+      <LogicalName>pad-error-list-errors-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\error-list-errors-16%402x.png">
-      <LogicalName>error-list-errors-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-error-list-warnings-16.png">
+      <LogicalName>pad-error-list-warnings-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\error-list-warnings-16.png">
-      <LogicalName>error-list-warnings-light-16.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\error-list-warnings-16%402x.png">
-      <LogicalName>error-list-warnings-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-error-list-warnings-16%402x.png">
+      <LogicalName>pad-error-list-warnings-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="MonoDevelop.Ide.WelcomePage\icons\starburst.png">
       <LogicalName>starburst.png</LogicalName>
@@ -1287,8 +1330,41 @@
     <EmbeddedResource Include="icons\light\status-connecting-6-14%402x.png">
       <LogicalName>status-connecting-6-light-14@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\variable-16.png">
-      <LogicalName>variable-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\element-variable-16.png">
+      <LogicalName>element-variable-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-variable-16%402x.png">
+      <LogicalName>element-variable-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-exception-16.png">
+      <LogicalName>element-exception-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-exception-16%402x.png">
+      <LogicalName>element-exception-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-fs-field-16.png">
+      <LogicalName>element-fs-field-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-fs-field-16%402x.png">
+      <LogicalName>element-fs-field-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-module-16.png">
+      <LogicalName>element-module-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-module-16%402x.png">
+      <LogicalName>element-module-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-other-declaration-16.png">
+      <LogicalName>element-other-declaration-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-other-declaration-16%402x.png">
+      <LogicalName>element-other-declaration-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-type-16.png">
+      <LogicalName>element-type-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\element-type-16%402x.png">
+      <LogicalName>element-type-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\file-source-16.png">
       <LogicalName>file-source-light-16.png</LogicalName>
@@ -1416,11 +1492,11 @@
     <EmbeddedResource Include="icons\light\web-reference-folder-win-16%402x.png">
       <LogicalName>web-reference-folder-win-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\help-16.png">
-      <LogicalName>help-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-help-16.png">
+      <LogicalName>pad-help-light-16.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\help-16%402x.png">
-      <LogicalName>help-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\pad-help-16%402x.png">
+      <LogicalName>pad-help-light-16@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\preferences-16.png">
       <LogicalName>preferences-light-16.png</LogicalName>
@@ -1446,17 +1522,17 @@
     <EmbeddedResource Include="icons\light\add-16%402x.png">
       <LogicalName>add-light-16@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\bubble-error-16.png">
-      <LogicalName>bubble-error-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\warning-overlay-9.png">
+      <LogicalName>warning-overlay-light-9.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\bubble-error-16%402x.png">
-      <LogicalName>bubble-error-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\warning-overlay-9%402x.png">
+      <LogicalName>warning-overlay-light-9@2x.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\bubble-warning-16.png">
-      <LogicalName>bubble-warning-light-16.png</LogicalName>
+    <EmbeddedResource Include="icons\light\warning-8.png">
+      <LogicalName>warning-light-8.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="icons\light\bubble-warning-16%402x.png">
-      <LogicalName>bubble-warning-light-16@2x.png</LogicalName>
+    <EmbeddedResource Include="icons\light\warning-8%402x.png">
+      <LogicalName>warning-light-8@2x.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\warning-16.png">
       <LogicalName>warning-light-16.png</LogicalName>
@@ -1511,6 +1587,279 @@
     </EmbeddedResource>
     <EmbeddedResource Include="icons\light\done-16%402x.png">
       <LogicalName>done-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\edit-16.png">
+      <LogicalName>edit-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\edit-16%402x.png">
+      <LogicalName>edit-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-16.png">
+      <LogicalName>star-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-16%402x.png">
+      <LogicalName>star-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-hover-16.png">
+      <LogicalName>star-hover-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-hover-16%402x.png">
+      <LogicalName>star-hover-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-overlay-16.png">
+      <LogicalName>star-overlay-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-overlay-16%402x.png">
+      <LogicalName>star-overlay-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-overlay-hover-16.png">
+      <LogicalName>star-overlay-hover-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\star-overlay-hover-16%402x.png">
+      <LogicalName>star-overlay-hover-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-16.png">
+      <LogicalName>unstar-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-16%402x.png">
+      <LogicalName>unstar-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-hover-16.png">
+      <LogicalName>unstar-hover-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-hover-16%402x.png">
+      <LogicalName>unstar-hover-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-overlay-16.png">
+      <LogicalName>unstar-overlay-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-overlay-16%402x.png">
+      <LogicalName>unstar-overlay-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-overlay-hover-16.png">
+      <LogicalName>unstar-overlay-hover-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\unstar-overlay-hover-16%402x.png">
+      <LogicalName>unstar-overlay-hover-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\remove-16.png">
+      <LogicalName>remove-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\remove-16%402x.png">
+      <LogicalName>remove-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\properties-16.png">
+      <LogicalName>properties-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\properties-16%402x.png">
+      <LogicalName>properties-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-load-save-16.png">
+      <LogicalName>prefs-load-save-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-load-save-16%402x.png">
+      <LogicalName>prefs-load-save-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-code-formatting-16.png">
+      <LogicalName>prefs-code-formatting-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-code-formatting-16%402x.png">
+      <LogicalName>prefs-code-formatting-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-language-16.png">
+      <LogicalName>prefs-language-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-language-16%402x.png">
+      <LogicalName>prefs-language-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-key-bindings-16.png">
+      <LogicalName>prefs-key-bindings-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-key-bindings-16%402x.png">
+      <LogicalName>prefs-key-bindings-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-fonts-16.png">
+      <LogicalName>prefs-fonts-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-fonts-16%402x.png">
+      <LogicalName>prefs-fonts-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-author-information-16.png">
+      <LogicalName>prefs-author-information-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-author-information-16%402x.png">
+      <LogicalName>prefs-author-information-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-sdk-locations-16.png">
+      <LogicalName>prefs-sdk-locations-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-sdk-locations-16%402x.png">
+      <LogicalName>prefs-sdk-locations-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-external-tools-16.png">
+      <LogicalName>prefs-external-tools-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-external-tools-16%402x.png">
+      <LogicalName>prefs-external-tools-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-build-16.png">
+      <LogicalName>prefs-build-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-build-16%402x.png">
+      <LogicalName>prefs-build-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-play-16.png">
+      <LogicalName>prefs-play-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-play-16%402x.png">
+      <LogicalName>prefs-play-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-updates-16.png">
+      <LogicalName>prefs-updates-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-updates-16%402x.png">
+      <LogicalName>prefs-updates-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-task-list-16.png">
+      <LogicalName>prefs-task-list-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-task-list-16%402x.png">
+      <LogicalName>prefs-task-list-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-generic-16.png">
+      <LogicalName>prefs-generic-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-generic-16%402x.png">
+      <LogicalName>prefs-generic-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-csharp-16.png">
+      <LogicalName>prefs-csharp-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-csharp-16%402x.png">
+      <LogicalName>prefs-csharp-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-standard-header-16.png">
+      <LogicalName>prefs-standard-header-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-standard-header-16%402x.png">
+      <LogicalName>prefs-standard-header-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-dotnet-naming-policies-16.png">
+      <LogicalName>prefs-dotnet-naming-policies-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-dotnet-naming-policies-16%402x.png">
+      <LogicalName>prefs-dotnet-naming-policies-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-code-templates-16.png">
+      <LogicalName>prefs-code-templates-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-code-templates-16%402x.png">
+      <LogicalName>prefs-code-templates-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-name-conventions-16.png">
+      <LogicalName>prefs-name-conventions-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\prefs-name-conventions-16%402x.png">
+      <LogicalName>prefs-name-conventions-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\copy-16.png">
+      <LogicalName>copy-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\copy-16%402x.png">
+      <LogicalName>copy-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\find-16.png">
+      <LogicalName>find-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\find-16%402x.png">
+      <LogicalName>find-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\find-and-replace-16.png">
+      <LogicalName>find-and-replace-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\find-and-replace-16%402x.png">
+      <LogicalName>find-and-replace-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-back-16.png">
+      <LogicalName>go-back-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-back-16%402x.png">
+      <LogicalName>go-back-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-down-16.png">
+      <LogicalName>go-down-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-down-16%402x.png">
+      <LogicalName>go-down-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-forward-16.png">
+      <LogicalName>go-forward-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-forward-16%402x.png">
+      <LogicalName>go-forward-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-up-16.png">
+      <LogicalName>go-up-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\go-up-16%402x.png">
+      <LogicalName>go-up-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\undo-16.png">
+      <LogicalName>undo-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\undo-16%402x.png">
+      <LogicalName>undo-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\home-16.png">
+      <LogicalName>home-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\home-16%402x.png">
+      <LogicalName>home-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\jump-to-16.png">
+      <LogicalName>jump-to-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\jump-to-16%402x.png">
+      <LogicalName>jump-to-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\media-play-16.png">
+      <LogicalName>media-play-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\media-play-16%402x.png">
+      <LogicalName>media-play-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\missing-image-16.png">
+      <LogicalName>missing-image-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\missing-image-16%402x.png">
+      <LogicalName>missing-image-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\open-16.png">
+      <LogicalName>open-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\refresh-16.png">
+      <LogicalName>refresh-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\refresh-16%402x.png">
+      <LogicalName>refresh-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\save-16.png">
+      <LogicalName>save-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\save-all-16.png">
+      <LogicalName>save-all-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\zoom-in-16.png">
+      <LogicalName>zoom-in-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\zoom-in-16%402x.png">
+      <LogicalName>zoom-in-light-16@2x.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\zoom-out-16.png">
+      <LogicalName>zoom-out-light-16.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="icons\light\zoom-out-16%402x.png">
+      <LogicalName>zoom-out-light-16@2x.png</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -1684,7 +2033,7 @@
     <Compile Include="MonoDevelop.Ide.Gui.Components\TreeOptions.cs" />
     <Compile Include="MonoDevelop.Ide.Gui.Components\TransactedTreeBuilder.cs" />
     <Compile Include="MonoDevelop.Ide.Gui.Content\INavigable.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui.Content\IUrlHandler.cs" />
+    <Compile Include="MonoDevelop.Ide.Gui.Content\IOpenNamedElementHandler.cs" />
     <Compile Include="MonoDevelop.Ide.Gui.Content\ISmartIndenter.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="MonoDevelop.Ide.Gui.Content\ITextEditorResolver.cs" />
@@ -2090,7 +2439,6 @@
     <Compile Include="MonoDevelop.Components.Extensions\TextQuestionDialog.cs" />
     <Compile Include="MonoDevelop.Components.Extensions\ErrorDialog.cs" />
     <Compile Include="MonoDevelop.Ide.Gui.Dialogs\GtkErrorDialog.cs" />
-    <Compile Include="MonoDevelop.Components\ImageLoader.cs" />
     <Compile Include="MonoDevelop.Ide.CodeFormatting\ICodeFormatter.cs" />
     <Compile Include="MonoDevelop.Ide.CodeFormatting\IAdvancedCodeFormatter.cs" />
     <Compile Include="MonoDevelop.Ide.CodeFormatting\DefaultCodeFormatter.cs" />
@@ -2103,8 +2451,6 @@
     <Compile Include="MonoDevelop.Ide.Extensions\StartupHandlerExtensionAttribute.cs" />
     <Compile Include="MonoDevelop.Ide.FindInFiles\ReferencesFinder.cs" />
     <Compile Include="MonoDevelop.Components\SectionList.cs" />
-    <Compile Include="MonoDevelop.Ide.OnlineTemplates\OnlineTemplateService.cs" />
-    <Compile Include="MonoDevelop.Ide.OnlineTemplates\ProjectTemplateIndex.cs" />
     <Compile Include="MonoDevelop.Ide.Projects\TemplatePickerWidget.cs" />
     <Compile Include="MonoDevelop.Ide.Projects\NewProjectOptionsWidget.cs" />
     <Compile Include="MonoDevelop.Ide.Extensions\FileTypeCondition.cs" />
@@ -2307,6 +2653,10 @@
     <Compile Include="MonoDevelop.Components.DockNotebook\DockNotebookTab.cs" />
     <Compile Include="MonoDevelop.Components.DockNotebook\DockNotebookContainer.cs" />
     <Compile Include="MonoDevelop.Ide.Gui\Split.cs" />
+    <Compile Include="MonoDevelop.Ide.Gui.Pads.ProjectPad\SapNodeBuilder.cs" />
+    <Compile Include="MonoDevelop.Ide.CustomTools\PublicResXFileCodeGenerator.cs" />
+    <Compile Include="MonoDevelop.Components\ImageLoader.cs" />
+    <Compile Include="MonoDevelop.Components.DockNotebook\DockWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile.am" />
@@ -2337,7 +2687,6 @@
     <Folder Include="MonoDevelop.Ide\" />
     <Folder Include="MonoDevelop.Ide.Gui.Dialogs\" />
     <Folder Include="MonoDevelop.Ide.Projects.OptionPanels\" />
-    <Folder Include="MonoDevelop.Ide.NavigateToDialog\" />
     <Folder Include="MonoDevelop.Ide.Navigation\" />
     <Folder Include="MonoDevelop.Components.AutoTest\" />
     <Folder Include="MonoDevelop.Ide.Fonts\" />
@@ -2360,6 +2709,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="gtkrc">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="gtkrc.win32-vista">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
