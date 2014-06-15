@@ -65,7 +65,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 
 		public void AddOverload (TooltipInformation tooltipInformation)
 		{
-			if (tooltipInformation == null || tooltipInformation.IsEmpty)
+			if (tooltipInformation == null || string.IsNullOrEmpty (tooltipInformation.SignatureMarkup))
 				return;
 			overloads.Add (tooltipInformation);
 
@@ -80,12 +80,11 @@ namespace MonoDevelop.Ide.CodeCompletion
 		public void AddOverload (CompletionData data)
 		{
 			var tooltipInformation = data.CreateTooltipInformation (false);
-			if (tooltipInformation.IsEmpty)
+			if (string.IsNullOrEmpty (tooltipInformation.SignatureMarkup))
 				return;
 
 			using (var layout = new Pango.Layout (PangoContext)) {
-				var des = FontService.GetFontDescription ("Editor");
-				layout.FontDescription = des;
+				layout.FontDescription = FontService.GetFontDescription ("Editor");
 				layout.SetMarkup (tooltipInformation.SignatureMarkup);
 				int w, h;
 				layout.GetPixelSize (out w, out h);
@@ -110,7 +109,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 			if (current_overload >= 0 && current_overload < overloads.Count) {
 				var o = overloads[current_overload];
 				headLabel.Markup = o.SignatureMarkup;
-				headLabel.Visible = !string.IsNullOrEmpty (o.SignatureMarkup);
+				headLabel.Visible = true;
 				int x, y;
 				GetPosition (out x, out y);
 				var geometry = DesktopService.GetUsableMonitorGeometry (Screen, Screen.GetMonitorAtPoint (x, y));
@@ -137,6 +136,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 					contentLabel.MaxWidth = 400;
 					contentLabel.Markup = o.FooterMarkup.Trim ();
 					contentLabel.ModifyFg (StateType.Normal, foreColor.ToGdkColor ());
+					contentLabel.FontDescription = FontService.GetFontDescription ("Editor");
 
 					descriptionBox.PackEnd (contentLabel, true, true, 4);
 				}
@@ -197,13 +197,12 @@ namespace MonoDevelop.Ide.CodeCompletion
 
 			vbox.Spacing = 2;
 
-			if (categoryName != null) {
-				var catLabel = new FixedWidthWrapLabel ();
-				catLabel.Text = categoryName;
-				catLabel.ModifyFg (StateType.Normal, foreColor.ToGdkColor ());
+			var catLabel = new FixedWidthWrapLabel ();
+			catLabel.Text = categoryName;
+			catLabel.ModifyFg (StateType.Normal, foreColor.ToGdkColor ());
+			catLabel.FontDescription = FontService.GetFontDescription ("Editor");
 
-				vbox.PackStart (catLabel, false, true, 0);
-			}
+			vbox.PackStart (catLabel, false, true, 0);
 
 			var contentLabel = new FixedWidthWrapLabel ();
 			contentLabel.Wrap = Pango.WrapMode.WordChar;
@@ -212,6 +211,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 			contentLabel.MaxWidth = 400;
 			contentLabel.Markup = categoryContentMarkup.Trim ();
 			contentLabel.ModifyFg (StateType.Normal, foreColor.ToGdkColor ());
+			contentLabel.FontDescription = FontService.GetFontDescription ("Editor");
 
 			vbox.PackStart (contentLabel, true, true, 0);
 
@@ -235,6 +235,8 @@ namespace MonoDevelop.Ide.CodeCompletion
 			TypeHint = Gdk.WindowTypeHint.Tooltip;
 			this.SkipTaskbarHint = true;
 			this.SkipPagerHint = true;
+			if (IdeApp.Workbench != null)
+				this.TransientFor = IdeApp.Workbench.RootWindow;
 			this.AllowShrink = false;
 			this.AllowGrow = false;
 			this.CanFocus = false;
@@ -243,7 +245,7 @@ namespace MonoDevelop.Ide.CodeCompletion
 			
 			headLabel = new FixedWidthWrapLabel ();
 			headLabel.Indent = -20;
-			headLabel.FontDescription = FontService.GetFontDescription ("Editor(TooltipSource)");;
+			headLabel.FontDescription = FontService.GetFontDescription ("Editor").CopyModified (1.1);
 			headLabel.Wrap = Pango.WrapMode.WordChar;
 			headLabel.BreakOnCamelCasing = false;
 			headLabel.BreakOnPunctuation = false;
