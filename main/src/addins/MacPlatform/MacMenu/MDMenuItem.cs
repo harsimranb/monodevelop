@@ -91,7 +91,7 @@ namespace MonoDevelop.MacIntegration.MacMenu
 			var info = manager.GetCommandInfo (ce.CommandId, new CommandTargetRoute (initialCommandTarget));
 
 			if (!isArrayItem) {
-				SetItemValues (this, info, ce.DisabledVisible);
+				SetItemValues (this, info);
 				if (!Hidden)
 					MDMenu.ShowLastSeparator (ref lastSeparator);
 				return;
@@ -139,7 +139,7 @@ namespace MonoDevelop.MacIntegration.MacMenu
 					NSMenuItem sep = null;
 					PopulateArrayItems (((CommandInfoSet)ci).CommandInfos, item.Submenu, ref sep, ref i);
 				}
-				SetItemValues (item, ci, true);
+				SetItemValues (item, ci);
 
 				if (!item.Hidden)
 					MDMenu.ShowLastSeparator (ref lastSeparator);
@@ -152,16 +152,11 @@ namespace MonoDevelop.MacIntegration.MacMenu
 			public CommandInfo Info;
 		}
 
-		void SetItemValues (NSMenuItem item, CommandInfo info, bool disabledVisible)
+		void SetItemValues (NSMenuItem item, CommandInfo info)
 		{
 			item.SetTitleWithMnemonic (GetCleanCommandText (info));
-
-			bool enabled = info.Enabled && (!IsGloballyDisabled || commandSource == CommandSource.ContextMenu);
-			bool visible = info.Visible && (disabledVisible || info.Enabled);
-
-			item.Enabled = enabled;
-			item.Hidden = !visible;
-
+			item.Enabled = info.Enabled && (!IsGloballyDisabled || commandSource != CommandSource.ContextMenu);
+			item.Hidden = !info.Visible;
 			SetAccel (item, info.AccelKey);
 
 			if (info.Checked) {
