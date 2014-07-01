@@ -112,8 +112,8 @@ namespace MonoDevelop.Components.DockNotebook
 				if (value == NavigationButtonsVisible)
 					return;
 				if (value) {
-					children.Add (NextButton); 
-					children.Add (PreviousButton); 
+					children.Add (NextButton);
+					children.Add (PreviousButton);
 					OnSizeAllocated (Allocation);
 					PreviousButton.ShowAll ();
 					NextButton.ShowAll ();
@@ -216,7 +216,7 @@ namespace MonoDevelop.Components.DockNotebook
 			closingTabs [tab.Index] = tab;
 			new Animation (f => tab.WidthModifier = f, tab.WidthModifier, 0)
 				.AddConcurrent (new Animation (f => tab.Opacity = f, tab.Opacity, 0), 0.8d)
-				.Commit (tab, "Closing", 
+				.Commit (tab, "Closing",
 				easing: Easing.CubicOut,
 				finished: (f, a) => {
 					if (!a)
@@ -286,7 +286,7 @@ namespace MonoDevelop.Components.DockNotebook
 			la.SetText ("H");
 			int w, h;
 			la.GetPixelSize (out w, out h);
-			
+
 			totalHeight = h + TopPadding + BottomPadding;
 			la.Dispose ();
 		}
@@ -354,35 +354,70 @@ namespace MonoDevelop.Components.DockNotebook
 		}
 
 		PlaceholderWindow placeholderWindow;
+		bool mouseHasLeft;
 
 		protected override bool OnLeaveNotifyEvent (EventCrossing evnt)
 		{
-			if (draggingTab) {
-				if (placeholderWindow == null) {
-					var tab = notebook.CurrentTab;
-					placeholderWindow = new PlaceholderWindow (tab);
-
-					int x, y;
-					Gdk.Display.Default.GetPointer (out x, out y);
-					placeholderWindow.MovePosition (x, y); 
-					placeholderWindow.Show ();
-
-					placeholderWindow.Destroyed += delegate {
-						placeholderWindow = null;
-					};
-				}
-				draggingTab = false;
-			}
+			if (draggingTab && placeholderWindow == null && !mouseHasLeft)
+				mouseHasLeft = true;
 			return base.OnLeaveNotifyEvent (evnt);
+		}
+
+		void CreatePlaceholderWindow ()
+		{
+			var tab = notebook.CurrentTab;
+			placeholderWindow = new PlaceholderWindow (tab);
+
+			int x, y;
+			Gdk.Display.Default.GetPointer (out x, out y);
+			placeholderWindow.MovePosition (x, y);
+			placeholderWindow.Show ();
+
+			placeholderWindow.Destroyed += delegate {
+				placeholderWindow = null;
+				buttonPressedOnTab = false;
+			};
+		}
+
+		Gdk.Rectangle GetScreenRect ()
+		{
+			int ox, oy;
+			ParentWindow.GetOrigin (out ox, out oy);
+			var alloc = notebook.Allocation;
+			alloc.X += ox;
+			alloc.Y += oy;
+			return alloc;
+		}
+
+		protected override bool OnGrabBrokenEvent (EventGrabBroken evnt)
+		{
+			if (placeholderWindow != null)
+				placeholderWindow.Destroy ();
+			return base.OnGrabBrokenEvent (evnt);
 		}
 
 		protected override bool OnMotionNotifyEvent (EventMotion evnt)
 		{
+			if (draggingTab && mouseHasLeft) {
+				var sr = GetScreenRect ();
+				sr.Height = BarHeight;
+				sr.Inflate (30, 30);
+
+				int x, y;
+				Gdk.Display.Default.GetPointer (out x, out y);
+
+				if (x < sr.Left || x > sr.Right || y < sr.Top || y > sr.Bottom) {
+					draggingTab = false;
+					mouseHasLeft = false;
+					CreatePlaceholderWindow ();
+				}
+			}
+
 			string newTooltip = null;
 			if (placeholderWindow != null) {
 				int x, y;
 				Gdk.Display.Default.GetPointer (out x, out y);
-				placeholderWindow.MovePosition (x, y); 
+				placeholderWindow.MovePosition (x, y);
 				return base.OnMotionNotifyEvent (evnt);
 			}
 
@@ -402,6 +437,7 @@ namespace MonoDevelop.Components.DockNotebook
 				}
 				if (!overCloseButton && !draggingTab && buttonPressedOnTab) {
 					draggingTab = true;
+					mouseHasLeft = false;
 					dragXProgress = 1.0f;
 					int x = (int)evnt.X;
 					dragOffset = x - t.Allocation.X;
@@ -603,7 +639,7 @@ namespace MonoDevelop.Components.DockNotebook
 				ctx.SetSource (gr);
 				ctx.Fill ();
 			}
-			
+
 			ctx.MoveTo (region.X, 0.5);
 			ctx.LineTo (region.Right + 1, 0.5);
 			ctx.LineWidth = 1;
@@ -631,7 +667,7 @@ namespace MonoDevelop.Components.DockNotebook
 					animationTarget = targetOffset;
 				}
 			}
-			
+
 			return tabStartX - renderOffset;
 		}
 
@@ -751,26 +787,26 @@ namespace MonoDevelop.Components.DockNotebook
 			} else {
 				double lineColor = .63 - .1 * animationProgress;
 				const double fillColor = .74;
-				
+
 				double heightMod = Math.Max (0, 1.0 - animationProgress * 2);
 				context.MoveTo (center.X - 3, center.Y - 3 * heightMod);
 				context.LineTo (center.X + 3, center.Y + 3 * heightMod);
 				context.MoveTo (center.X - 3, center.Y + 3 * heightMod);
 				context.LineTo (center.X + 3, center.Y - 3 * heightMod);
-				
+
 				context.LineWidth = 2;
 				context.SetSourceRGBA (lineColor, lineColor, lineColor, opacity);
 				context.Stroke ();
-				
+
 				if (animationProgress > 0.5) {
 					double partialProg = (animationProgress - 0.5) * 2;
 					context.MoveTo (center.X - 3, center.Y);
 					context.LineTo (center.X + 3, center.Y);
-					
+
 					context.LineWidth = 2 - partialProg;
 					context.SetSourceRGBA (lineColor, lineColor, lineColor, opacity);
 					context.Stroke ();
-					
+
 					double radius = partialProg * 3.5;
 
 					// Background
@@ -820,7 +856,7 @@ namespace MonoDevelop.Components.DockNotebook
 				ctx.SetSource (gr);
 			}
 			ctx.Fill ();
-			
+
 			ctx.SetSourceColor (new Cairo.Color (1, 1, 1, .5).MultiplyAlpha (tab.Opacity));
 			LayoutTabBorder (ctx, allocation, tabBounds.Width, tabBounds.X, 1, active);
 			ctx.Stroke ();
@@ -834,7 +870,7 @@ namespace MonoDevelop.Components.DockNotebook
 				using (var rg = new RadialGradient (mouse.X, tabBounds.Bottom, 0, mouse.X, tabBounds.Bottom, 100)) {
 					rg.AddColorStop (0, new Cairo.Color (1, 1, 1, 0.4 * tab.Opacity * tab.GlowStrength));
 					rg.AddColorStop (1, new Cairo.Color (1, 1, 1, 0));
-					
+
 					ctx.SetSource (rg);
 					ctx.Fill ();
 				}
@@ -843,10 +879,10 @@ namespace MonoDevelop.Components.DockNotebook
 			}
 
 			// Render Close Button (do this first so we can tell how much text to render)
-			
+
 			var ch = allocation.Height - TopBarPadding - BottomBarPadding + CloseImageTopOffset;
-			var crect = new Gdk.Rectangle (tabBounds.Right - padding - CloseButtonSize + 3, 
-				            tabBounds.Y + TopBarPadding + (ch - CloseButtonSize) / 2, 
+			var crect = new Gdk.Rectangle (tabBounds.Right - padding - CloseButtonSize + 3,
+				            tabBounds.Y + TopBarPadding + (ch - CloseButtonSize) / 2,
 				            CloseButtonSize, CloseButtonSize);
 			tab.CloseButtonAllocation = crect;
 			tab.CloseButtonAllocation.Inflate (2, 2);
@@ -865,15 +901,25 @@ namespace MonoDevelop.Components.DockNotebook
 			int textStart = tabBounds.X + padding;
 
 			ctx.MoveTo (textStart, tabBounds.Y + TopPadding + TextOffset + VerticalTextSize);
-			// ellipses are for space wasting ..., we cant afford that
-			using (var lg = new LinearGradient (textStart + w - 5, 0, textStart + w + 3, 0)) {
-				var color = tab.Notify ? new Cairo.Color (0, 0, 1) : Styles.TabBarActiveTextColor;
-				color = color.MultiplyAlpha (tab.Opacity);
-				lg.AddColorStop (0, color);
-				color.A = 0;
-				lg.AddColorStop (1, color);
-				ctx.SetSource (lg);
+			if (!MonoDevelop.Core.Platform.IsMac && !MonoDevelop.Core.Platform.IsWindows) {
+				// This is a work around for a linux specific problem.
+				// A bug in the proprietary ATI driver caused TAB text not to draw.
+				// If that bug get's fixed remove this HACK asap.
+				la.Ellipsize = Pango.EllipsizeMode.End;
+				la.Width = (int)(w * Pango.Scale.PangoScale);
+				ctx.SetSourceColor (tab.Notify ? new Cairo.Color (0, 0, 1) : Styles.TabBarActiveTextColor);
 				Pango.CairoHelper.ShowLayoutLine (ctx, la.GetLine (0));
+			} else {
+				// ellipses are for space wasting ..., we cant afford that
+				using (var lg = new LinearGradient (textStart + w - 5, 0, textStart + w + 3, 0)) {
+					var color = tab.Notify ? new Cairo.Color (0, 0, 1) : Styles.TabBarActiveTextColor;
+					color = color.MultiplyAlpha (tab.Opacity);
+					lg.AddColorStop (0, color);
+					color.A = 0;
+					lg.AddColorStop (1, color);
+					ctx.SetSource (lg);
+					Pango.CairoHelper.ShowLayoutLine (ctx, la.GetLine (0));
+				}
 			}
 			la.Dispose ();
 		}
