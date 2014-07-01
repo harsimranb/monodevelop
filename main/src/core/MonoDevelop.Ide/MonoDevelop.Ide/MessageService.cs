@@ -27,13 +27,14 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using Gtk;
 using MonoDevelop.Core;
-using MonoDevelop.Components.Extensions;
+using Gtk;
 using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide.Gui.Dialogs;
+using System.Collections.Generic;
+using MonoDevelop.Components.Extensions;
+using Mono.Addins;
+using System.Threading;
 
 namespace MonoDevelop.Ide
 {
@@ -62,15 +63,41 @@ namespace MonoDevelop.Ide
 		
 		public static AlertButton OverwriteFile = new AlertButton (GettextCatalog.GetString ("_Overwrite file"));
 		
+		string label;
+		string icon;
+		bool   isStockButton;
 		
-		public string Label { get; set; }
-		public string Icon { get; set; }
-		public bool IsStockButton { get; set; }
+		public string Label {
+			get {
+				return label;
+			}
+			set {
+				label = value;
+			}
+		}
+		
+		public string Icon {
+			get {
+				return icon;
+			}
+			set {
+				icon = value;
+			}
+		}
+
+		public bool IsStockButton {
+			get {
+				return isStockButton;
+			}
+			set {
+				isStockButton = value;
+			}
+		}
 		
 		public AlertButton (string label, string icon)
 		{
-			this.Label = label;
-			this.Icon = icon;
+			this.label = label;
+			this.icon = icon;
 		}
 		
 		public AlertButton (string label) : this (label, null)
@@ -79,7 +106,7 @@ namespace MonoDevelop.Ide
 		
 		public AlertButton (string label, bool isStockButton) : this (label)
 		{
-			this.IsStockButton = isStockButton;
+			this.isStockButton = isStockButton;
 		}
 	}
 	
@@ -99,28 +126,38 @@ namespace MonoDevelop.Ide
 	//all methods are synchronously invoked on the GUI thread, except those which take GTK# objects as arguments
 	public static class MessageService
 	{
-		public static Window RootWindow { get; internal set; }
+		static Window rootWindow;
+		
+		public static Window RootWindow {
+			get {
+				return rootWindow; 
+			}
+			
+			set {
+				rootWindow = value;
+			}
+		}
 		
 		#region ShowException
 		
 		public static void ShowException (Exception e)
 		{
-			ShowException ((Window)null, e);
+			ShowException (RootWindow, e);
 		}
 		
 		public static void ShowException (Exception e, string message)
 		{
-			ShowException ((Window)null, e, message);
+			ShowException (RootWindow, e, message);
 		}
 		
 		public static void ShowException (Exception e, string message, string title)
 		{
-			ShowException ((Window)null, e, message, title);
+			ShowException (RootWindow, e, message, title);
 		}
 		
 		public static AlertButton ShowException (Exception e, string message, string title, params AlertButton[] buttons)
 		{
-			return ShowException ((Window)null, e, message, title, buttons);
+			return ShowException (RootWindow, e, message, title, buttons);
 		}
 
 		public static void ShowException (Window parent, Exception e)
@@ -149,7 +186,7 @@ namespace MonoDevelop.Ide
 		#region ShowError
 		public static void ShowError (string primaryText)
 		{
-			ShowError ((Window)null, primaryText);
+			ShowError (RootWindow, primaryText);
 		}
 		public static void ShowError (Window parent, string primaryText)
 		{
@@ -157,19 +194,18 @@ namespace MonoDevelop.Ide
 		}
 		public static void ShowError (string primaryText, string secondaryText)
 		{
-			ShowError ((Window)null, primaryText, secondaryText);
+			ShowError (RootWindow, primaryText, secondaryText);
 		}
-
 		public static void ShowError (Window parent, string primaryText, string secondaryText)
 		{
-			GenericAlert (parent, MonoDevelop.Ide.Gui.Stock.Error, primaryText, secondaryText, AlertButton.Ok);
+			GenericAlert (MonoDevelop.Ide.Gui.Stock.Error, primaryText, secondaryText, AlertButton.Ok);
 		}
 		#endregion
 		
 		#region ShowWarning
 		public static void ShowWarning (string primaryText)
 		{
-			ShowWarning ((Window)null, primaryText);
+			ShowWarning (RootWindow, primaryText);
 		}
 		public static void ShowWarning (Window parent, string primaryText)
 		{
@@ -177,18 +213,18 @@ namespace MonoDevelop.Ide
 		}
 		public static void ShowWarning (string primaryText, string secondaryText)
 		{
-			ShowWarning ((Window)null, primaryText, secondaryText);
+			ShowWarning (RootWindow, primaryText, secondaryText);
 		}
 		public static void ShowWarning (Window parent, string primaryText, string secondaryText)
 		{
-			GenericAlert (parent, MonoDevelop.Ide.Gui.Stock.Warning, primaryText, secondaryText, AlertButton.Ok);
+			GenericAlert (MonoDevelop.Ide.Gui.Stock.Warning, primaryText, secondaryText, AlertButton.Ok);
 		}
 		#endregion
 		
 		#region ShowMessage
 		public static void ShowMessage (string primaryText)
 		{
-			ShowMessage ((Window)null, primaryText);
+			ShowMessage (RootWindow, primaryText);
 		}
 		public static void ShowMessage (Window parent, string primaryText)
 		{
@@ -196,11 +232,11 @@ namespace MonoDevelop.Ide
 		}
 		public static void ShowMessage (string primaryText, string secondaryText)
 		{
-			ShowMessage ((Window)null, primaryText, secondaryText);
+			ShowMessage (RootWindow, primaryText, secondaryText);
 		}
 		public static void ShowMessage (Window parent, string primaryText, string secondaryText)
 		{
-			GenericAlert (parent, MonoDevelop.Ide.Gui.Stock.Information, primaryText, secondaryText, AlertButton.Ok);
+			GenericAlert (MonoDevelop.Ide.Gui.Stock.Information, primaryText, secondaryText, AlertButton.Ok);
 		}
 		#endregion
 		
@@ -226,7 +262,7 @@ namespace MonoDevelop.Ide
 		
 		public static bool Confirm (ConfirmationMessage message)
 		{
-			return messageService.GenericAlert (null, message) == message.ConfirmButton;
+			return messageService.GenericAlert (message) == message.ConfirmButton;
 		}
 		#endregion
 		
@@ -252,7 +288,7 @@ namespace MonoDevelop.Ide
 		
 		public static AlertButton AskQuestion (QuestionMessage message)
 		{
-			return messageService.GenericAlert (null, message);
+			return messageService.GenericAlert (message);
 		}
 		
 		#endregion
@@ -285,24 +321,28 @@ namespace MonoDevelop.Ide
 		/// </summary>
 		public static int RunCustomDialog (Dialog dialog, Window parent)
 		{
-			// if dialog is modal, make sure it's parented on any existing modal dialog
-			if (dialog.Modal) {
-				parent = GetDefaultModalParent ();
-			}
-
-			//ensure the dialog has a parent
 			if (parent == null) {
-				parent = dialog.TransientFor ?? RootWindow;
+				if (dialog.TransientFor != null)
+					parent = dialog.TransientFor;
+				else
+					parent = GetDefaultParent (dialog);
 			}
-
 			dialog.TransientFor = parent;
 			dialog.DestroyWithParent = true;
-
 			if (dialog.Title == null)
 				dialog.Title = BrandingService.ApplicationName;
-
 			PlaceDialog (dialog, parent);
 			return Mono.TextEditor.GtkWorkarounds.RunDialogWithNotification (dialog);
+		}
+		
+		//make sure modal children are parented on top of other modal children
+		static Window GetDefaultParent (Window child)
+		{
+			if (child.Modal) {
+				return GetDefaultModalParent ();
+			} else {
+				return RootWindow;
+			}
 		}
 		
 		/// <summary>
@@ -313,12 +353,7 @@ namespace MonoDevelop.Ide
 			foreach (Window w in Window.ListToplevels ())
 				if (w.Visible && w.HasToplevelFocus && w.Modal)
 					return w;
-			return GetFocusedToplevel ();
-		}
-
-		static Window GetFocusedToplevel ()
-		{
-			return Window.ListToplevels ().FirstOrDefault (w => w.HasToplevelFocus) ?? RootWindow;
+			return RootWindow;
 		}
 		
 		/// <summary>
@@ -326,20 +361,15 @@ namespace MonoDevelop.Ide
 		/// </summary>
 		public static void PlaceDialog (Window child, Window parent)
 		{
-			//HACK: this is a workaround for broken automatic window placement on Mac
-			if (!Platform.IsMac)
-				return;
-
-			//modal windows should always be placed o top of existing modal windows
-			if (child.Modal)
-				parent = GetDefaultModalParent ();
-
-			//else center on the focused toplevel
-			if (parent == null)
-				parent = GetFocusedToplevel ();
-
-			if (parent != null)
-				CenterWindow (child, parent);
+			//HACK: Mac GTK automatic window placement is broken
+			if (Platform.IsMac) {
+				if (parent == null) {
+					parent = GetDefaultParent (child);
+				}
+				if (parent != null) {
+					CenterWindow (child, parent);
+				}
+			}
 		}
 		
 		/// <summary>Centers a window relative to its parent.</summary>
@@ -357,34 +387,16 @@ namespace MonoDevelop.Ide
 		
 		public static AlertButton GenericAlert (string icon, string primaryText, string secondaryText, params AlertButton[] buttons)
 		{
-			return GenericAlert ((Window)null, icon, primaryText, secondaryText, buttons.Length - 1, buttons);
-		}
-
-		public static AlertButton GenericAlert (Window parent, string icon, string primaryText, string secondaryText, params AlertButton[] buttons)
-		{
-			return GenericAlert (parent, icon, primaryText, secondaryText, buttons.Length - 1, buttons);
+			return GenericAlert (icon, primaryText, secondaryText, buttons.Length - 1, buttons);
 		}
 		
 		public static AlertButton GenericAlert (string icon, string primaryText, string secondaryText, int defaultButton,
 			params AlertButton[] buttons)
 		{
-			return GenericAlert ((Window)null, icon, primaryText, secondaryText, defaultButton, CancellationToken.None, buttons);
-		}
-
-		public static AlertButton GenericAlert (Window parent, string icon, string primaryText, string secondaryText, int defaultButton,
-			params AlertButton[] buttons)
-		{
-			return GenericAlert (parent, icon, primaryText, secondaryText, defaultButton, CancellationToken.None, buttons);
-		}
-
-		public static AlertButton GenericAlert (string icon, string primaryText, string secondaryText, int defaultButton,
-			CancellationToken cancellationToken,
-			params AlertButton[] buttons)
-		{
-			return GenericAlert ((Window)null, icon, primaryText, secondaryText, defaultButton, cancellationToken, buttons);
+			return GenericAlert (icon, primaryText, secondaryText, defaultButton, CancellationToken.None, buttons);
 		}
 		
-		public static AlertButton GenericAlert (Window parent, string icon, string primaryText, string secondaryText, int defaultButton,
+		public static AlertButton GenericAlert (string icon, string primaryText, string secondaryText, int defaultButton,
 			CancellationToken cancellationToken,
 			params AlertButton[] buttons)
 		{
@@ -395,42 +407,25 @@ namespace MonoDevelop.Ide
 			foreach (AlertButton but in buttons)
 				message.Buttons.Add (but);
 			
-			return messageService.GenericAlert (parent, message);
-		}
-
-		public static AlertButton GenericAlert (GenericMessage message)
-		{
-			return GenericAlert ((Window)null, message);
+			return messageService.GenericAlert (message);
 		}
 		
-		public static AlertButton GenericAlert (Window parent, GenericMessage message)
+		public static AlertButton GenericAlert (GenericMessage message)
 		{
-			return messageService.GenericAlert (parent, message);
+			return messageService.GenericAlert (message);
 		}
 		
 		public static string GetTextResponse (string question, string caption, string initialValue)
 		{
-			return GetTextResponse ((Window)null, question, caption, initialValue, false);
+			return GetTextResponse (question, caption, initialValue, false);
 		}
-
-		public static string GetTextResponse (Window parent, string question, string caption, string initialValue)
-		{
-			return GetTextResponse (parent, question, caption, initialValue, false);
-		}
-
 		public static string GetPassword (string question, string caption)
 		{
-			return GetTextResponse ((Window)null, question, caption, string.Empty, true);
+			return GetTextResponse(question, caption, string.Empty, true);
 		}
-
-		public static string GetPassword (Window parent, string question, string caption)
+		static string GetTextResponse (string question, string caption, string initialValue, bool isPassword)
 		{
-			return GetTextResponse (parent, question, caption, string.Empty, true);
-		}
-
-		static string GetTextResponse (Window parent, string question, string caption, string initialValue, bool isPassword)
-		{
-			return messageService.GetTextResponse (parent, question, caption, initialValue, isPassword);
+			return messageService.GetTextResponse (question, caption, initialValue, isPassword);
 		}
 		
 		#region Internal GUI object
@@ -457,28 +452,25 @@ namespace MonoDevelop.Ide
 					Title = title ?? GettextCatalog.GetString ("An error has occurred"),
 					Message = message,
 					Exception = e,
-					TransientFor = parent ?? GetDefaultModalParent (),
+					TransientFor = parent,
 				};
 				exceptionDialog.Run ();
 				return exceptionDialog.ResultButton;
 			}
 			
-			public AlertButton GenericAlert (Window parent, MessageDescription message)
+			public AlertButton GenericAlert (MessageDescription message)
 			{
-				var dialog = new AlertDialog (message) {
-					TransientFor = parent ?? GetDefaultModalParent ()
-				};
+				var dialog = new AlertDialog (message);
 				return dialog.Run ();
 			}
 			
-			public string GetTextResponse (Window parent, string question, string caption, string initialValue, bool isPassword)
+			public string GetTextResponse (string question, string caption, string initialValue, bool isPassword)
 			{
-				var dialog = new TextQuestionDialog {
+				var dialog = new TextQuestionDialog () {
 					Question = question,
 					Caption = caption,
 					Value = initialValue,
 					IsPassword = isPassword,
-					TransientFor = parent ?? GetDefaultModalParent ()
 				};
 				if (dialog.Run ())
 					return dialog.Value;
