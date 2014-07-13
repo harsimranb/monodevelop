@@ -1,0 +1,14 @@
+﻿<?xml version="1.0"?>
+<ExtensionModel>
+	<Runtime>
+		<Import file="Templates\EmptyCssFile.xft.xml" />
+	</Runtime>
+	<Extension path="/MonoDevelop/Core/MimeTypes">
+		<MimeType id="text/css" _description="Css Stylesheet File" icon="md-html-file-icon" isText="true">
+			<File pattern="*.css" />
+		</MimeType>
+	</Extension>
+	<Extension path="/MonoDevelop/Ide/FileTemplates">
+		<FileTemplate id="CssFile" file="Templates\EmptyCssFile.xft.xml" />
+	</Extension>
+</ExtensionModel>

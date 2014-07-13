@@ -1,0 +1,14 @@
+﻿<?xml version="1.0"?>
+<Template Originator="Harsimran Bath" Created="2014/07/13" LastModified="2014/07/13">
+	<!-- Template Header -->
+	<TemplateConfiguration>
+		<_Name>Empty Css File</_Name>
+		<Icon>md-html-file-icon</Icon>
+		<_Category>Web</_Category>
+		<_Description>Create an empty Css file.</_Description>
+	</TemplateConfiguration>
+	<TemplateFiles>
+		<File DefaultExtension=".css"><![CDATA[]]></File>
+	</TemplateFiles>
+	<FileOptions />
+</Template>
