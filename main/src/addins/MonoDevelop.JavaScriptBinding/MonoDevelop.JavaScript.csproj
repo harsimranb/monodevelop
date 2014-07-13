@@ -159,6 +159,10 @@
     <Compile Include="Parser\JSUpdateableProjectContent.cs" />
     <Compile Include="Completion\CodeCompletionUtility.cs" />
     <Compile Include="Jurassic\Core\JurassicUtility.cs" />
+    <Compile Include="Refactoring\RefactoryCommands.cs" />
+    <Compile Include="Refactoring\FindAllReferencesHandler.cs" />
+    <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
+    <Compile Include="Refactoring\MemberReference.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Formatting\MonoJSPolicy.xml" />
@@ -222,5 +226,6 @@
     <Folder Include="DomainObjects\" />
     <Folder Include="DomainObjects\Cache\" />
     <Folder Include="JSReferences\" />
+    <Folder Include="Refactoring\" />
   </ItemGroup>
 </Project>
