@@ -159,6 +159,7 @@
     <Compile Include="Parser\JSUpdateableProjectContent.cs" />
     <Compile Include="Completion\CodeCompletionUtility.cs" />
     <Compile Include="Jurassic\Core\JurassicUtility.cs" />
+    <Compile Include="Formatting\FormattingChanges.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Formatting\MonoJSPolicy.xml" />

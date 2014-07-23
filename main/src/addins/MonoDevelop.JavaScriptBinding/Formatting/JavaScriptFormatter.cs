@@ -29,6 +29,7 @@ using Mono.TextEditor;
 using MonoDevelop.Core;
 using MonoDevelop.Ide.CodeFormatting;
 using MonoDevelop.Projects.Policies;
+using ICSharpCode.NRefactory.TypeSystem;
 
 namespace MonoDevelop.JavaScript.Formatting
 {
@@ -62,17 +63,16 @@ namespace MonoDevelop.JavaScript.Formatting
 				}
 			}
 
-			var beautifier = new JSBeautifier (new JSBeautifierOptions{
+			var beautifier = new JSBeautifier (doc.Editor.Document, new JSBeautifierOptions{
 				BraceStyle = JSBraceStyle.Collapse,
 				IndentSize = defaultIndentSize,
 				IndentWithTabs = true,
 				DefaultIndent = indentLevel
 			});
-			string formattedText = beautifier.Beautify (textToFormat);
 
 			using (var undo = doc.Editor.OpenUndoGroup (OperationType.Format)) {
 				try {
-					doc.Editor.Replace (startOffset, endOffset - startOffset, formattedText);
+					beautifier.Beautify ();
 					doc.Editor.Document.CommitDocumentUpdate ();
 				} catch (Exception e) {
 					LoggingService.LogError ("Error in on the JS fly formatter", e);
@@ -82,8 +82,7 @@ namespace MonoDevelop.JavaScript.Formatting
 
 		public override string FormatText (PolicyContainer policyParent, IEnumerable<string> mimeTypeChain, string input, int startOffset, int endOffset)
 		{
-			var beautifier = new JSBeautifier (new JSBeautifierOptions());
-			return beautifier.Beautify (input);
+			return null;
 		}
 	}
 }

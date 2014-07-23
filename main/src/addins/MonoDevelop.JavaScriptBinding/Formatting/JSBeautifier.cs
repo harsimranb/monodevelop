@@ -23,6 +23,10 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Globalization;
+using ICSharpCode.NRefactory.Editor;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Ide;
+using System.CodeDom.Compiler;
 
 namespace MonoDevelop.JavaScript.Formatting
 {
@@ -135,15 +139,19 @@ namespace MonoDevelop.JavaScript.Formatting
 
 	public class JSBeautifier
 	{
-		public JSBeautifier ()
-			: this (new JSBeautifierOptions ())
+		public readonly IDocument Document;
+
+		public JSBeautifier (IDocument document)
+			: this (document, new JSBeautifierOptions ())
 		{
 		}
 
-		public JSBeautifier (JSBeautifierOptions opts)
+		public JSBeautifier (IDocument document, JSBeautifierOptions opts)
 		{
 			this.Opts = opts;
 			this.BlankState ();
+
+			this.Document = document;
 		}
 
 		public JSBeautifierOptions Opts { get; set; }
@@ -170,9 +178,9 @@ namespace MonoDevelop.JavaScript.Formatting
 
 		private string LastLastText { get; set; }
 
-		private string Input { get; set; }
+		private string Input { get { return Document.Text; } }
 
-		private List<string> Output { get; set; }
+		//private List<string> Output { get; set; }
 
 		private char[] Whitespace { get; set; }
 
@@ -207,8 +215,7 @@ namespace MonoDevelop.JavaScript.Formatting
 			this.LastType = "TK_START_EXPR";  // last token type
 			this.LastText = "";               // last token text
 			this.LastLastText = "";           // pre-last token text
-			this.Input = null;
-			this.Output = new List<string> (); // formatted javascript gets built here
+			//this.Output = new List<string> (); // formatted javascript gets built here
 			this.Whitespace = new[] { '\n', '\r', '\t', ' ' };
 			this.Wordchar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$";
 			this.Digits = "0123456789";
@@ -240,16 +247,20 @@ namespace MonoDevelop.JavaScript.Formatting
 			this.Flags.PreviousMode = prev.Mode;
 		}
 
-		public string Beautify (string s, JSBeautifierOptions opts = null)
+		public void Beautify (JSBeautifierOptions opts = null)
 		{
 			if (opts != null)
 				this.Opts = opts;
 
 			this.BlankState ();
 
-			while (s.Length != 0 && (s [0] == ' ' || s [0] == '\t')) {
-				this.PreindentString += s [0];
-				s = s.Remove (0, 1);
+			while (Document.Text.Length != 0 && (GetCharFromDocument (0) == " " || GetCharFromDocument (0) == "\t")) {
+				this.PreindentString += GetCharFromDocument (0);
+				UpdateDocument (0, 1, string.Empty);
+			}
+
+			while (Document.Text.Length != 0 && (GetCharFromDocument (0) == "\r" || GetCharFromDocument (0) == "\n")) {
+				UpdateDocument (0, 1, string.Empty);
 			}
 
 			int tempDefSize = Opts.DefaultIndent;
@@ -258,7 +269,6 @@ namespace MonoDevelop.JavaScript.Formatting
 				tempDefSize--;
 			}
 
-			this.Input = s;
 			this.ParserPos = 0;
 			while (true) {
 				Tuple<string, string> token = GetNextToken ();
@@ -292,20 +302,22 @@ namespace MonoDevelop.JavaScript.Formatting
 				this.LastText = tokenText;
 			}
 
-			Regex regex = new Regex (@"[\n ]+$");
+			//Regex regex = new Regex(@"[\n ]+$");
 
-			string sweetCode = this.PreindentString + regex.Replace (string.Concat (this.Output), "", 1);
-			return sweetCode;
+			//this.Document.Text = this.PreindentString + regex.Replace(string.Concat(this.Input), "", 1);
 		}
 
 		private void TrimOutput (bool eatNewlines = false)
 		{
-			while (this.Output.Count != 0 &&
-			       (this.Output [this.Output.Count - 1] == " " ||
-			       this.Output [this.Output.Count - 1] == this.IndentString ||
-			       this.Output [this.Output.Count - 1] == this.PreindentString ||
-			       (eatNewlines && (this.Output [this.Output.Count - 1] == "\n" || this.Output [this.Output.Count - 1] == "\r")))) {
-				this.Output.RemoveAt (this.Output.Count - 1);
+			int nextPos = ParserPos + 1;
+			while (Document.Text.Length != 0 &&
+			       nextPos < Document.Text.Length &&
+			       (GetCharFromDocument (nextPos) == " " ||
+			       GetCharFromDocument (nextPos) == this.IndentString ||
+			       GetCharFromDocument (nextPos) == this.PreindentString ||
+			       (eatNewlines && (GetCharFromDocument (nextPos) == "\n" || GetCharFromDocument (nextPos) == "\r")))) {
+				UpdateDocument (nextPos, 1, string.Empty);
+				nextPos--;
 			}
 		}
 
@@ -338,6 +350,11 @@ namespace MonoDevelop.JavaScript.Formatting
 
 		private void AppendNewline (bool ignoreRepeated = true, bool resetStatementFlags = true)
 		{
+			AppendNewline (ParserPos, ignoreRepeated, resetStatementFlags);
+		}
+
+		private void AppendNewline (int position, bool ignoreRepeated = true, bool resetStatementFlags = true)
+		{
 			this.Flags.EatNextSpace = false;
 
 			if (this.Opts.KeepArrayIndentation && this.IsArray (this.Flags.Mode))
@@ -350,25 +367,30 @@ namespace MonoDevelop.JavaScript.Formatting
 
 			this.TrimOutput ();
 
-			if (this.Output.Count == 0)
+			if (Document.Text.Length == 0)
 				return;
 
-			if (this.Output [this.Output.Count - 1] != "\n" || !ignoreRepeated) {
-				this.JustAddedNewline = true;
-				this.Output.Add ("\n");
-			}
-
-			if (this.PreindentString != null && this.PreindentString.Length != 0)
-				this.Output.Add (this.PreindentString);
+			if (this.Flags.VarLine && this.Flags.VarLineReindented)
+				UpdateDocument (position, 0, this.IndentString);
 
 			foreach (int i in Enumerable.Range(0, this.Flags.IndentationLevel + this.Flags.ChainExtraIndentation))
-				this.Output.Add (this.IndentString);
+				UpdateDocument (position, 0, this.IndentString);
 
-			if (this.Flags.VarLine && this.Flags.VarLineReindented)
-				this.Output.Add (this.IndentString);
+			if (this.PreindentString != null && this.PreindentString.Length != 0)
+				UpdateDocument (position, 0, this.PreindentString);
+
+			if (Input.Length > position && GetCharFromDocument (position) != "\n" || !ignoreRepeated) {
+				this.JustAddedNewline = true;
+				UpdateDocument (position, 0, "\n");
+			}
 		}
 
 		private void Append (string s)
+		{
+			Append (ParserPos + 1, s);
+		}
+
+		private void Append (int offset, string s)
 		{
 			if (s == " ") {
 				// do not add just a single space after the // comment, ever
@@ -380,16 +402,16 @@ namespace MonoDevelop.JavaScript.Formatting
 				// make sure only single space gets drawn
 				if (this.Flags.EatNextSpace)
 					this.Flags.EatNextSpace = false;
-				else if (this.Output.Count != 0 &&
-				         this.Output [this.Output.Count - 1] != " " &&
-				         this.Output [this.Output.Count - 1] != "\n" &&
-				         this.Output [this.Output.Count - 1] != this.IndentString) {
-					this.Output.Add (" ");
+				else if (offset < Document.Text.Length &&
+				         GetCharFromDocument (offset) != " " &&
+				         GetCharFromDocument (offset) != "\n" &&
+				         GetCharFromDocument (offset) != this.IndentString) {
+					UpdateDocument (offset, 0, " ");
 				}
 			} else {
 				this.JustAddedNewline = false;
 				this.Flags.EatNextSpace = false;
-				this.Output.Add (s);
+				//				this.Output.Add (s);
 			}
 		}
 
@@ -400,10 +422,13 @@ namespace MonoDevelop.JavaScript.Formatting
 
 		private void RemoveIndent ()
 		{
-			if (this.Output.Count != 0 &&
-			    (this.Output [this.Output.Count - 1] == this.IndentString ||
-			    this.Output [this.Output.Count - 1] == this.PreindentString)) {
-				this.Output.RemoveAt (this.Output.Count - 1);
+			if (ParserPos >= Document.Text.Length)
+				return;
+
+			if (GetCharFromDocument (ParserPos) == this.IndentString) {
+				UpdateDocument (ParserPos, this.IndentString.Length, "");
+			} else if (GetCharFromDocument (ParserPos) == this.PreindentString) {
+				UpdateDocument (ParserPos, this.PreindentString.Length, "");
 			}
 		}
 
@@ -429,6 +454,7 @@ namespace MonoDevelop.JavaScript.Formatting
 			char c = this.Input [this.ParserPos];
 			this.ParserPos += 1;
 			bool keepWhitespace = this.Opts.KeepArrayIndentation && this.IsArray (this.Flags.Mode);
+			bool newLines = false;
 
 			if (keepWhitespace) {
 				int whitespaceCount = 0;
@@ -436,7 +462,7 @@ namespace MonoDevelop.JavaScript.Formatting
 				while (this.Whitespace.Contains (c)) {
 					if (c == '\n') {
 						this.TrimOutput ();
-						this.Output.Add ("\n");
+						UpdateDocument (ParserPos, 0, "\n");
 						this.JustAddedNewline = true;
 						whitespaceCount = 0;
 					} else if (c == '\t')
@@ -454,7 +480,7 @@ namespace MonoDevelop.JavaScript.Formatting
 
 				if (this.JustAddedNewline)
 					foreach (int i in Enumerable.Range(0, whitespaceCount))
-						this.Output.Add (" ");
+						UpdateDocument (ParserPos, 0, " ");
 			} else { //  not keep_whitespace
 				while (this.Whitespace.Contains (c)) {
 					if (c == '\n')
@@ -469,10 +495,7 @@ namespace MonoDevelop.JavaScript.Formatting
 				}
 
 				if (this.Opts.PreserveNewlines && this.NNewlines > 1)
-					foreach (int i in Enumerable.Range(0, this.NNewlines)) {
-						this.AppendNewline (i == 0);
-						this.JustAddedNewline = true;
-					}
+					newLines = true;
 				this.WantedNewline = this.NNewlines > 0;
 			}
 
@@ -486,6 +509,14 @@ namespace MonoDevelop.JavaScript.Formatting
 						this.ParserPos += 1;
 						if (this.ParserPos == this.Input.Length)
 							break;
+					}
+				}
+
+				if (newLines) {
+					newLines = false;
+					foreach (int i in Enumerable.Range(0, this.NNewlines)) {
+						this.AppendNewline (ParserPos - cc.Length, i == 0);
+						this.JustAddedNewline = true;
 					}
 				}
 
@@ -503,9 +534,17 @@ namespace MonoDevelop.JavaScript.Formatting
 
 				if (this.WantedNewline && this.LastType != "TK_OPERATOR" && this.LastType != "TK_EQUALS" &&
 				    !this.Flags.IfLine && (this.Opts.PreserveNewlines || this.LastText != "var"))
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - cc.Length);
 
 				return new Tuple<string, string> (cc, "TK_WORD");
+			}
+
+			if (newLines) {
+				newLines = false;
+				foreach (int i in Enumerable.Range(0, this.NNewlines)) {
+					this.AppendNewline (ParserPos - cc.Length, i == 0);
+					this.JustAddedNewline = true;
+				}
 			}
 
 			if ("([".Contains (c))
@@ -555,7 +594,7 @@ namespace MonoDevelop.JavaScript.Formatting
 							break;
 					}
 					if (this.WantedNewline)
-						this.AppendNewline ();
+						this.AppendNewline (ParserPos - comment.Length);
 					return new Tuple<string, string> (comment, "TK_COMMENT");
 				}
 			}
@@ -662,15 +701,15 @@ namespace MonoDevelop.JavaScript.Formatting
 			if (c == '#') {
 				string resultString = "";
 				// she-bang
-				if (this.Output.Count == 0 && this.Input.Length > 1 && this.Input [this.ParserPos] == '!') {
+				if (this.Input.Length > 1 && this.Input [this.ParserPos] == '!') {
 					resultString = c.ToString ();
 					while (this.ParserPos < this.Input.Length && c != '\n') {
 						c = this.Input [this.ParserPos];
 						resultString += c;
 						this.ParserPos += 1;
 					}
-					this.Output.Add (resultString.Trim () + '\n');
-					this.AppendNewline ();
+					UpdateDocument (ParserPos, 0, "\n");
+					this.AppendNewline (ParserPos);
 					return this.GetNextToken ();
 				}
 
@@ -744,12 +783,12 @@ namespace MonoDevelop.JavaScript.Formatting
 			return new Tuple<string, string> (c.ToString (), "TK_UNKNOWN");
 		}
 
-		private void HandleStartExpr (string  tokenText)
+		private void HandleStartExpr (string tokenText)
 		{
 			if (tokenText == "[") {
 				if (this.LastType == "TK_WORD" || this.LastText == ")") {
 					if (this.LineStarters.Contains (this.LastText))
-						this.Append (" ");
+						this.Append (ParserPos - tokenText.Length, " ");
 
 					this.SetMode ("(EXPRESSION)");
 					this.Append (tokenText);
@@ -766,7 +805,7 @@ namespace MonoDevelop.JavaScript.Formatting
 						}
 						this.SetMode ("[EXPRESSION]");
 						if (!this.Opts.KeepArrayIndentation)
-							this.AppendNewline ();
+							this.AppendNewline (ParserPos - tokenText.Length);
 					} else if (this.LastText == "[") {
 						if (this.Flags.Mode == "[EXPRESSION]") {
 							this.Flags.Mode = "[INDENTED-EXPRESSION]";
@@ -775,7 +814,7 @@ namespace MonoDevelop.JavaScript.Formatting
 						}
 						this.SetMode ("[EXPRESSION]");
 						if (!this.Opts.KeepArrayIndentation)
-							this.AppendNewline ();
+							this.AppendNewline (ParserPos - tokenText.Length);
 					} else
 						this.SetMode ("[EXPRESSION]");
 				} else
@@ -790,19 +829,19 @@ namespace MonoDevelop.JavaScript.Formatting
 			}
 
 			if (this.LastText == ";" || this.LastType == "TK_START_BLOCK")
-				this.AppendNewline ();
+				this.AppendNewline (ParserPos - tokenText.Length);
 			else if (this.LastType == "TK_END_EXPR" || this.LastType == "TK_START_EXPR" || this.LastType == "TK_END_BLOCK" || this.LastText == ".") {
 				// do nothing on (( and )( and ][ and ]( and .(
 				if (this.WantedNewline)
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - tokenText.Length);
 			} else if (this.LastType != "TK_WORD" && this.LastType != "TK_OPERATOR")
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 			else if (this.LastWord == "function" || this.LastWord == "typeof") {
 				// function() vs function (), typeof() vs typeof ()
 				if (this.Opts.JslintHappy)
-					this.Append (" ");
+					this.Append (ParserPos - tokenText.Length, " ");
 			} else if (this.LineStarters.Contains (this.LastText) || this.LastText == "catch")
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 
 			this.Append (tokenText);
 		}
@@ -820,7 +859,7 @@ namespace MonoDevelop.JavaScript.Formatting
 				} else if (this.Flags.Mode == "[INDENTED-EXPRESSION]") {
 					if (this.LastText == "]") {
 						this.RestoreMode ();
-						this.AppendNewline ();
+						this.AppendNewline (ParserPos - tokenText.Length);
 						this.Append (tokenText);
 						return;
 					}
@@ -840,25 +879,25 @@ namespace MonoDevelop.JavaScript.Formatting
 			if (this.Opts.BraceStyle == JSBraceStyle.Expand) {
 				if (this.LastType != "TK_OPERATOR") {
 					if (this.LastText == "=" || (this.IsSpecialWord (this.LastText) && this.LastText != "else"))
-						this.Append (" ");
+						this.Append (ParserPos - tokenText.Length, " ");
 					else
-						this.AppendNewline (true);
+						this.AppendNewline (ParserPos - tokenText.Length, true);
 				}
 				this.Append (tokenText);
 				this.Indent ();
 			} else {
 				if (this.LastType != "TK_OPERATOR" && this.LastType != "TK_START_EXPR") {
 					if (this.LastType == "TK_START_BLOCK")
-						this.AppendNewline ();
+						this.AppendNewline (ParserPos - tokenText.Length);
 					else
-						this.Append (" ");
+						this.Append (ParserPos - tokenText.Length, " ");
 				} else {
 					// if TK_OPERATOR or TK_START_EXPR
 					if (this.IsArray (this.Flags.PreviousMode) && this.LastText == ",") {
 						if (this.LastLastText == "}")
-							this.Append (" ");
+							this.Append (ParserPos - tokenText.Length, " ");
 						else
-							this.AppendNewline ();
+							this.AppendNewline (ParserPos - tokenText.Length);
 					}
 				}
 				this.Indent ();
@@ -872,7 +911,7 @@ namespace MonoDevelop.JavaScript.Formatting
 			if (this.Opts.BraceStyle == JSBraceStyle.Expand) {
 				if (this.LastText != "{")
 					RemoveIndent ();
-				this.AppendNewline ();
+				this.AppendNewline (ParserPos - tokenText.Length);
 			} else {
 				if (this.LastType == "TK_START_BLOCK") {
 					if (this.JustAddedNewline)
@@ -882,10 +921,10 @@ namespace MonoDevelop.JavaScript.Formatting
 				} else {
 					if (this.IsArray (this.Flags.Mode) && this.Opts.KeepArrayIndentation) {
 						this.Opts.KeepArrayIndentation = false;
-						this.AppendNewline ();
+						this.AppendNewline (ParserPos - tokenText.Length);
 						this.Opts.KeepArrayIndentation = true;
 					} else
-						this.AppendNewline ();
+						this.AppendNewline (ParserPos - tokenText.Length);
 				}
 			}
 			this.Append (tokenText);
@@ -894,7 +933,7 @@ namespace MonoDevelop.JavaScript.Formatting
 		private void HandleWord (string tokenText)
 		{
 			if (this.DoBlockJustClosed) {
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 				this.Append (tokenText);
 				this.Append (" ");
 				this.DoBlockJustClosed = false;
@@ -915,30 +954,30 @@ namespace MonoDevelop.JavaScript.Formatting
 
 					if (2 - haveNewlines > 0)
 						foreach (int i in Enumerable.Range(0, 2 - haveNewlines))
-							this.AppendNewline (false);
+							this.AppendNewline (ParserPos - tokenText.Length, false);
 				}
 				if ((this.LastText == "get" || this.LastText == "set" || this.LastText == "new") || this.LastType == "TK_WORD")
-					this.Append (" ");
+					this.Append (ParserPos - tokenText.Length, " ");
 
 				if (this.LastType == "TK_WORD") {
 					if (this.LastText == "get" || this.LastText == "set" || this.LastText == "new" || this.LastText == "return")
-						this.Append (" ");
+						this.Append (ParserPos - tokenText.Length, " ");
 					else
-						this.AppendNewline ();
+						this.AppendNewline (ParserPos - tokenText.Length);
 				} else if (this.LastType == "TK_OPERATOR" || this.LastText == "=")
 					// foo = function
-					this.Append (" ");
+					this.Append (ParserPos - tokenText.Length, " ");
 				else if (this.IsExpression (this.Flags.Mode)) {
 					// (function
 				} else
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - tokenText.Length);
 				this.Append ("function");
 				this.LastWord = "function";
 				return;
 			}
 
 			if (tokenText == "case" || (tokenText == "default" && this.Flags.InCaseStatement)) {
-				this.AppendNewline ();
+				this.AppendNewline (ParserPos - tokenText.Length);
 				if (this.Flags.CaseBody) {
 					this.RemoveIndent ();
 					this.Flags.CaseBody = false;
@@ -960,7 +999,7 @@ namespace MonoDevelop.JavaScript.Formatting
 						prefix = "NEWLINE";
 					else {
 						prefix = "SPACE";
-						this.Append (" ");
+						this.Append (ParserPos - tokenText.Length, " ");
 					}
 				}
 			} else if (this.LastType == "TK_SEMICOLON" && (this.Flags.Mode == "BLOCK" || this.Flags.Mode == "DO_BLOCK"))
@@ -979,7 +1018,7 @@ namespace MonoDevelop.JavaScript.Formatting
 			} else if (this.LastType == "TK_START_BLOCK")
 				prefix = "NEWLINE";
 			else if (this.LastType == "TK_END_EXPR") {
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 				prefix = "NEWLINE";
 			}
 
@@ -995,36 +1034,36 @@ namespace MonoDevelop.JavaScript.Formatting
 
 			if (tokenText == "else" || tokenText == "catch" || tokenText == "finally") {
 				if (this.LastType != "TK_END_BLOCK" || this.Opts.BraceStyle == JSBraceStyle.Expand || this.Opts.BraceStyle == JSBraceStyle.EndExpand)
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - tokenText.Length);
 				else {
 					this.TrimOutput (true);
-					this.Append (" ");
+					this.Append (ParserPos - tokenText.Length, " ");
 				}
 			} else if (prefix == "NEWLINE") {
 				if (this.IsSpecialWord (this.LastText)) {
 					// no newline between return nnn
-					this.Append (" ");
+					this.Append (ParserPos - tokenText.Length, " ");
 				} else if (this.LastType != "TK_END_EXPR") {
 					if ((this.LastType != "TK_START_EXPR" || tokenText != "var") && this.LastText != ":") {
 						// no need to force newline on VAR -
 						// for (var x = 0...
 						if (tokenText == "if" && this.LastWord == "else" && this.LastText != "{")
-							this.Append (" ");
+							this.Append (ParserPos - tokenText.Length, " ");
 						else {
 							this.Flags.VarLine = false;
 							this.Flags.VarLineReindented = false;
-							this.AppendNewline ();
+							this.AppendNewline (ParserPos - tokenText.Length);
 						}
 					}
 				} else if (this.LineStarters.Contains (tokenText) && this.LastText != ")") {
 					this.Flags.VarLine = false;
 					this.Flags.VarLineReindented = false;
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - tokenText.Length);
 				}
 			} else if (this.IsArray (this.Flags.Mode) && this.LastText == "," && this.LastLastText == "}")
-				this.AppendNewline (); //}, in lists get a newline
+				this.AppendNewline (ParserPos - tokenText.Length); //}, in lists get a newline
 			else if (prefix == "SPACE")
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 
 			this.Append (tokenText);
 			this.LastWord = tokenText;
@@ -1055,15 +1094,15 @@ namespace MonoDevelop.JavaScript.Formatting
 		private void HandleString (string tokenText)
 		{
 			if (this.LastType == "TK_END_EXPR" && (this.Flags.PreviousMode == "(COND-EXPRESSION)" || this.Flags.PreviousMode == "(FOR-EXPRESSION)"))
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 
 			if (this.LastType == "TK_COMMENT" || this.LastType == "TK_STRING" || this.LastType == "TK_START_BLOCK" || this.LastType == "TK_END_BLOCK" || this.LastType == "TK_SEMICOLON")
-				this.AppendNewline ();
+				this.AppendNewline (ParserPos - tokenText.Length);
 			else if (this.LastType == "TK_WORD")
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 			else if (this.Opts.PreserveNewlines && this.WantedNewline && this.Flags.Mode != "OBJECT") {
-				this.AppendNewline ();
-				this.Append (this.IndentString);
+				this.AppendNewline (ParserPos - tokenText.Length);
+				this.Append (ParserPos - tokenText.Length, this.IndentString);
 			}
 			this.Append (tokenText);
 		}
@@ -1073,7 +1112,7 @@ namespace MonoDevelop.JavaScript.Formatting
 			if (this.Flags.VarLine)
 				// just got an '=' in a var-line, different line breaking rules will apply
 				this.Flags.VarLineTainted = true;
-			this.Append (" ");
+			this.Append (ParserPos - tokenText.Length, " ");
 			this.Append (tokenText);
 			this.Append (" ");
 		}
@@ -1081,7 +1120,7 @@ namespace MonoDevelop.JavaScript.Formatting
 		private void HandleComma (string tokenText)
 		{
 			if (this.LastType == "TK_COMMENT")
-				this.AppendNewline ();
+				this.AppendNewline (ParserPos - tokenText.Length);
 
 			if (this.Flags.VarLine) {
 				if (this.IsExpression (this.Flags.Mode) || this.LastType == "TK_END_BLOCK") {
@@ -1126,7 +1165,7 @@ namespace MonoDevelop.JavaScript.Formatting
 
 			if (this.IsSpecialWord (this.LastText)) {
 				// return had a special handling in TK_WORD
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 				this.Append (tokenText);
 				return;
 			}
@@ -1170,7 +1209,7 @@ namespace MonoDevelop.JavaScript.Formatting
 				if (this.Flags.Mode == "BLOCK" && (this.LastText == ";" || this.LastText == "{")) {
 					// { foo: --i }
 					// foo(): --bar
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - tokenText.Length);
 				}
 			} else if (tokenText == ":") {
 				if (this.Flags.TernaryDepth == 0) {
@@ -1183,7 +1222,7 @@ namespace MonoDevelop.JavaScript.Formatting
 				this.Flags.TernaryDepth += 1;
 
 			if (spaceBefore)
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 
 			this.Append (tokenText);
 
@@ -1222,7 +1261,7 @@ namespace MonoDevelop.JavaScript.Formatting
 
 		private void HandleInlineComment (string tokenText)
 		{
-			this.Append (" ");
+			this.Append (ParserPos - tokenText.Length, " ");
 			this.Append (tokenText);
 			if (this.IsExpression (this.Flags.Mode))
 				this.Append (" ");
@@ -1237,9 +1276,9 @@ namespace MonoDevelop.JavaScript.Formatting
 
 			if (this.LastType != "TK_COMMENT") {
 				if (this.WantedNewline)
-					this.AppendNewline ();
+					this.AppendNewline (ParserPos - tokenText.Length);
 				else
-					this.Append (" ");
+					this.Append (ParserPos - tokenText.Length, " ");
 			}
 
 			this.Append (tokenText);
@@ -1249,11 +1288,11 @@ namespace MonoDevelop.JavaScript.Formatting
 		private void HandleDot (string tokenText)
 		{
 			if (this.IsSpecialWord (this.LastText))
-				this.Append (" ");
+				this.Append (ParserPos - tokenText.Length, " ");
 			else if (this.LastText == ")") {
 				if (this.Opts.BreakChainedMethods || this.WantedNewline) {
 					this.Flags.ChainExtraIndentation = 1;
-					this.AppendNewline (true, false);
+					this.AppendNewline (ParserPos - tokenText.Length, true, false);
 				}
 			}
 			this.Append (tokenText);
@@ -1263,6 +1302,25 @@ namespace MonoDevelop.JavaScript.Formatting
 		{
 			this.Append (tokenText);
 		}
+
+		string GetCharFromDocument (int pos)
+		{
+			return this.Document.GetCharAt (pos).ToString ();
+		}
+
+		void UpdateDocument (int offset, int removedChars, string insertedText)
+		{
+			if (removedChars != 0) {
+				this.Document.Remove (offset, removedChars);
+				ParserPos -= removedChars;
+			}
+
+			if (!string.IsNullOrEmpty (insertedText)) {
+				this.Document.Insert (offset, insertedText);
+				ParserPos += insertedText.Length;
+			}
+		}
 	}
+
 }
 
