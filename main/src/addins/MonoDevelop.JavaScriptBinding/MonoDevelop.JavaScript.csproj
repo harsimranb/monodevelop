@@ -162,7 +162,6 @@
     <Compile Include="Refactoring\RefactoryCommands.cs" />
     <Compile Include="Refactoring\FindAllReferencesHandler.cs" />
     <Compile Include="Refactoring\GotoDeclarationHandler.cs" />
-    <Compile Include="Refactoring\MemberReference.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Formatting\MonoJSPolicy.xml" />
