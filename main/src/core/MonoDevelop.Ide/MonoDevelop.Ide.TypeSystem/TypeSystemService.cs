@@ -289,16 +289,16 @@ namespace MonoDevelop.Ide.TypeSystem
 			CheckProjectOutput (project, true);
 		}
 
-		public static TypeSystemParser GetParser (string mimeType, string buildAction = BuildAction.Compile)
+		public static TypeSystemParser GetParser (string mimeType)
 		{
-			var n = GetTypeSystemParserNode (mimeType, buildAction);
-			return n != null ? n.Parser : null;
+			var provider = Parsers.FirstOrDefault (p => p.CanParse (mimeType));
+			return provider != null ? provider.Parser : null;
 		}
 
 		static TypeSystemParserNode GetTypeSystemParserNode (string mimeType, string buildAction)
 		{
 			foreach (var mt in DesktopService.GetMimeTypeInheritanceChain (mimeType)) {
-				var provider = Parsers.FirstOrDefault (p => p.CanParse (mt, buildAction));
+				var provider = Parsers.FirstOrDefault (p => p.CanParse (mt) && p.Parser.ShouldStoreInProjectContent (buildAction));
 				if (provider != null)
 					return provider;
 			}
@@ -372,8 +372,8 @@ namespace MonoDevelop.Ide.TypeSystem
 						wrapper = null;
 					}
 					if (wrapper != null && (result.Flags & ParsedDocumentFlags.NonSerializable) != ParsedDocumentFlags.NonSerializable) {
-						var oldFile = wrapper._content.GetFile (fileName);
-						wrapper.UpdateContent (c => c.AddOrUpdateFiles (result.ParsedFile));
+						var oldFile = wrapper.Content.GetFile (fileName);
+						wrapper.AddOrUpdateFiles (result);
 						UpdateProjectCommentTasks (wrapper, result);
 						if (oldFile != null)
 							wrapper.InformFileRemoved (new ParsedFileEventArgs (oldFile));
@@ -387,10 +387,10 @@ namespace MonoDevelop.Ide.TypeSystem
 							continue;
 						// Use the project context because file lookup is faster there than in the project class.
 						var pcnt = cnt.Value;
-						var file = pcnt._content.GetFile (fileName);
+						var file = pcnt.Content.GetFile (fileName);
 						if (file != null) {
 							var newResult = parser.Parse (false, fileName, new StringReader (content), pcnt.Project);
-							pcnt.UpdateContent (c => c.AddOrUpdateFiles (newResult.ParsedFile));
+							pcnt.AddOrUpdateFiles (newResult);
 							pcnt.InformFileRemoved (new ParsedFileEventArgs (file));
 							pcnt.InformFileAdded (new ParsedFileEventArgs (newResult.ParsedFile));
 						}
@@ -431,8 +431,8 @@ namespace MonoDevelop.Ide.TypeSystem
 				var result = parser.Parse (true, fileName, content);
 				lock (projectWrapperUpdateLock) {
 					if (wrapper != null && (result.Flags & ParsedDocumentFlags.NonSerializable) != ParsedDocumentFlags.NonSerializable) {
-						var oldFile = wrapper._content.GetFile (fileName);
-						wrapper.UpdateContent (c => c.AddOrUpdateFiles (result.ParsedFile));
+						var oldFile = wrapper.Content.GetFile (fileName);
+						wrapper.AddOrUpdateFiles (result);
 						UpdateProjectCommentTasks (wrapper, result);
 						if (oldFile != null)
 							wrapper.InformFileRemoved (new ParsedFileEventArgs (oldFile));
@@ -978,6 +978,11 @@ namespace MonoDevelop.Ide.TypeSystem
 				}
 			}
 
+			public bool HasExtensionObject (Type t)
+			{
+				return extensionObjects.ContainsKey (t);
+			}
+
 			/// <summary>
 			/// Updates an extension object for the wrapper. Note that only one extension object of a certain
 			/// type may be stored inside the project content wrapper.
@@ -1030,7 +1035,7 @@ namespace MonoDevelop.Ide.TypeSystem
 			public void RunWhenLoaded (Action<IProjectContent> act)
 			{
 				lock (updateContentLock) {
-					if (_content is LazyProjectLoader) {
+					if (Content is LazyProjectLoader) {
 						if (loadActions != null) {
 							loadActions.Clear ();
 							loadActions.Add (act);
@@ -1060,9 +1065,8 @@ namespace MonoDevelop.Ide.TypeSystem
 
 			readonly object updateContentLock = new object ();
 
-			public void UpdateContent (Func<IProjectContent, IProjectContent> updateFunc)
+			void LoadLazyProject ()
 			{
-				lock (updateContentLock) {
 					var lazyProjectLoader = Content as LazyProjectLoader;
 					if (lazyProjectLoader != null) {
 						lazyProjectLoader.ContextTask.Wait ();
@@ -1073,7 +1077,40 @@ namespace MonoDevelop.Ide.TypeSystem
 								action (Content);
 						}
 					}
+			}
+
+			public void UpdateContent (Func<IProjectContent, IProjectContent> updateFunc)
+			{
+				lock (updateContentLock) {
+					LoadLazyProject ();
 					Content = updateFunc (Content);
+					ClearCachedCompilations ();
+					WasChanged = true;
+				}
+			}
+
+			public void AddOrUpdateFiles (params ParsedDocument[] docs)
+			{
+				lock (updateContentLock) {
+                    LoadLazyProject ();
+
+					if(docs.Any (i => i is IUnresolvedFile))
+                    	Content = Content.AddOrUpdateFiles (docs.Select (d => d.ParsedFile));
+
+                    foreach (var t in extensionObjects.Values.OfType<IUpdateableProjectContent> ())
+                        t.AddOrUpdateFiles (docs);
+					ClearCachedCompilations ();
+					WasChanged = true;
+				}
+			}
+
+			public void RemoveFiles (params string[] fileNames)
+			{
+				lock (updateContentLock) {
+					LoadLazyProject ();
+					Content = Content.RemoveFiles (fileNames);
+					foreach (var t in extensionObjects.Values.OfType<IUpdateableProjectContent> ())
+						t.RemoveFiles (fileNames);
 					ClearCachedCompilations ();
 					WasChanged = true;
 				}
@@ -1611,6 +1648,12 @@ namespace MonoDevelop.Ide.TypeSystem
 			}
 		}
 
+		public interface IUpdateableProjectContent
+		{
+			void AddOrUpdateFiles (IEnumerable<ParsedDocument> docs);
+			void RemoveFiles (IEnumerable<string> filenames);
+		}
+
 		static readonly object projectContentLock = new object ();
 		static readonly Dictionary<Project, ProjectContentWrapper> projectContents = new Dictionary<Project, ProjectContentWrapper> ();
 
@@ -1677,10 +1720,11 @@ namespace MonoDevelop.Ide.TypeSystem
 			foreach (ProjectFileEventInfo fargs in args) {
 				var wrapper = projectContents [project];
 				var fileName = fargs.ProjectFile.Name;
-				var file = wrapper._content.GetFile (fileName);
-				if (file == null)
-					continue;
-				wrapper.UpdateContent (c => c.RemoveFiles (fileName));
+				var file = wrapper.Content.GetFile (fileName);
+
+				wrapper.RemoveFiles (fileName);
+
+				if (file != null)
 				wrapper.InformFileRemoved (new ParsedFileEventArgs (file));
 
 				var tags = wrapper.GetExtensionObject <ProjectCommentTags> ();
@@ -1694,10 +1738,11 @@ namespace MonoDevelop.Ide.TypeSystem
 			var project = (Project)sender;
 			foreach (ProjectFileRenamedEventInfo fargs in args) {
 				var content = projectContents [project];
-				var file = content._content.GetFile (fargs.OldName);
-				if (file == null)
-					continue;
-				content.UpdateContent (c => c.RemoveFiles (fargs.OldName));
+				var file = content.Content.GetFile (fargs.OldName);
+
+				content.RemoveFiles (fargs.OldName);
+
+				if (file != null)
 				content.InformFileRemoved (new ParsedFileEventArgs (file));
 
 				var tags = content.GetExtensionObject <ProjectCommentTags> ();
@@ -2597,7 +2642,7 @@ namespace MonoDevelop.Ide.TypeSystem
 						if (filesSkippedInParseThread.Any (f => f == fileName)) {
 							continue;
 						}
-						if (node == null || !node.CanParse (fileName, file.BuildAction)) {
+						if (node == null || !node.CanParse (fileName)) {
 							var newNode = GetTypeSystemParserNode (DesktopService.GetMimeTypeForUri (fileName), file.BuildAction);
 							var newParser = newNode != null ? newNode.Parser : null;
 							if (newParser == null)
@@ -2606,8 +2651,9 @@ namespace MonoDevelop.Ide.TypeSystem
 							parser = newParser;
 						}
 
-						if (parser == null || !File.Exists (fileName))
+						if (parser == null || !parser.ShouldStoreInProjectContent (file.BuildAction) || !File.Exists (fileName))
 							continue;
+
 						ParsedDocument parsedDocument;
 						try {
 							parsedDocument = parser.Parse (false, fileName, Context.Project);
@@ -2621,9 +2667,17 @@ namespace MonoDevelop.Ide.TypeSystem
 							tags.UpdateTags (Context.Project, parsedDocument.FileName, parsedDocument.TagComments);
 						if (token.IsCancellationRequested)
 							return;
-						parsedFiles.Add (Tuple.Create (parsedDocument, Context._content.GetFile (fileName))); 
+						parsedFiles.Add (Tuple.Create (parsedDocument, Context.Content.GetFile (fileName))); 
+
+						// if the parser provides a custom extension type for storing the data, ensure
+						// we have one on the context
+						var exoType = parser.GetProjectContentExtensionType (file.BuildAction);
+						if (exoType != null && !Context.HasExtensionObject (exoType)) {
+							var exo = (IUpdateableProjectContent)Activator.CreateInstance (exoType);
+							Context.UpdateExtensionObject (exo);
+						}
 					}
-					Context.UpdateContent (c => c.AddOrUpdateFiles (parsedFiles.Select (p => p.Item1.ParsedFile)));
+					Context.AddOrUpdateFiles (parsedFiles.Select (p => p.Item1).ToArray ());
 					foreach (var file in parsedFiles) {
 						if (token.IsCancellationRequested)
 							return;
@@ -2804,7 +2858,7 @@ namespace MonoDevelop.Ide.TypeSystem
 						var file = v.Item1;
 						var oldFile = v.Item2;
 						if (oldFile == null) {
-							var parser = TypeSystemService.GetParser (DesktopService.GetMimeTypeForUri (file.Name), file.BuildAction);
+							var parser = TypeSystemService.GetParser (DesktopService.GetMimeTypeForUri (file.Name));
 							if (parser == null)
 								continue;
 						}
@@ -2817,7 +2871,7 @@ namespace MonoDevelop.Ide.TypeSystem
 						if (token.IsCancellationRequested)
 							return;
 						if (project.GetProjectFile (file.FileName) == null) {
-							content.UpdateContent (c => c.RemoveFiles (file.FileName));
+							content.RemoveFiles (file.FileName);
 							content.InformFileRemoved (new ParsedFileEventArgs (file));
 							if (tags != null)
 								tags.RemoveFile (project, file.FileName);
